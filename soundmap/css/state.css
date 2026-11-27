@@ -1,0 +1,5 @@
+[data-cls=quiet]{--c:var(--quiet)}
+[data-cls=mod]{--c:var(--mod)}
+[data-cls=crit]{--c:var(--crit)}
+[data-cls=idle]{--c:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

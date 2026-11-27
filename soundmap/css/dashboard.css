@@ -1,0 +1,25 @@
+/* dashboard */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:12px;margin-bottom:16px}
+.tile{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(11,26,58,.7);min-width:0}
+.tile small{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tile b{display:block;font:700 38px/1.1 var(--f-display);margin:6px 0 2px;font-variant-numeric:tabular-nums;color:var(--c,var(--fg))}
+.tile b em{font:500 15px var(--f-body);font-style:normal;color:var(--muted);margin-left:4px}
+.tile .s2{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;margin-bottom:16px}
+.chart{position:relative;height:270px}
+.hrs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.hrs li{display:grid;grid-template-columns:76px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:14px}
+.hrs .bar{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.hrs .bar i{display:block;height:100%;border-radius:99px;background:var(--c)}
+.hrs .v{font:600 13px var(--f-mono);text-align:right}
+.fc{display:grid;gap:12px}
+.fc .big2{font:700 34px/1.1 var(--f-display)}
+.fc .big2 em{font:500 15px var(--f-body);font-style:normal;color:var(--muted)}
+.fc p{font-size:13.5px;color:var(--muted)}
+.tw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+.tbl th{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 10px;border-bottom:1px solid rgba(120,160,255,.08);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl td.num{font-family:var(--f-mono);font-weight:500}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.foot{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);max-width:80ch}

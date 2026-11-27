@@ -1,0 +1,1666 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RUIDÔMetro</title>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/home.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/monitor.css">
+<link rel="stylesheet" href="css/map.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/state.css">
+
+<style>
+  /* Garantia de preenchimento e visibilidade do mapa real Leaflet sem quebrar o tema dark */
+  #page-mapa .map-box {
+    position: relative;
+    min-height: 520px;
+    background: #0b0819;
+    overflow: hidden;
+  }
+  #map {
+    width: 100%;
+    height: 520px;
+    min-height: 420px;
+    z-index: 1;
+    background: #0b0819;
+  }
+  @media (max-width: 900px) {
+    #page-mapa .map-box,
+    #map {
+      height: 420px;
+      min-height: 360px;
+    }
+  }
+  .ruido-pin {
+    background: transparent !important;
+    border: none !important;
+  }
+  .ruido-pin-dot {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    transform: translate(-1px, -1px);
+  }
+  .ruido-me-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #a855f7;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 12px #a855f7;
+    transform: translate(-1px, -1px);
+  }
+  .leaflet-container {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #0b0819;
+  }
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip {
+    background: #141026;
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .leaflet-popup-content {
+    margin: 10px 12px;
+    line-height: 1.45;
+  }
+  .leaflet-control-attribution {
+    background: rgba(11, 8, 25, 0.82) !important;
+    color: #cbd5e1 !important;
+  }
+  .leaflet-control-attribution a {
+    color: #c084fc !important;
+  }
+</style>
+
+<link rel="icon" type="image/png" href="./img/logo.png">
+</head>
+
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1M7 8v8M11 3v18M15 7v10M19 10v4M22 12h-1"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9M12 18l4-7"/></symbol>
+</svg>
+
+<aside class="top sidebar">
+  <div class="sidebar-inner">
+    <a class="brand" href="#inicio" aria-label="Ruidômetro, página inicial">
+      <span class="logo">
+        <img src="img/logo.png" alt="">
+      </span>
+      <span>RUIDÔ<b>Metro</b></span>
+    </a>
+    <div class="sidebar-label">MENU PRINCIPAL</div>
+
+    <nav class="nav" aria-label="Principal">
+      <a href="#inicio" data-route="inicio">
+        <svg class="ic"><use href="#i-home"/></svg>
+        <span>Início</span>
+      </a>
+      <a href="#monitor" data-route="monitor">
+        <svg class="ic"><use href="#i-mic"/></svg>
+        <span>Monitoramento</span>
+      </a>
+      <a href="#mapa" data-route="mapa">
+        <svg class="ic"><use href="#i-pin"/></svg>
+        <span>Mapa</span>
+      </a>
+      <a href="#dashboard" data-route="dashboard">
+        <svg class="ic"><use href="#i-chart"/></svg>
+        <span>Dashboard</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="livechip" id="livechip">
+        <span class="dot-live"></span>
+        <span>Ao vivo</span>
+        <button class="btn sm stop" id="chip-stop" type="button">
+          <svg class="ic"><use href="#i-stop"/></svg>
+          Parar
+        </button>
+      </div>
+      <div class="sidebar-status">
+        <span class="status-dot"></span>
+        Sistema de monitoramento
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="wrap">
+
+<!-- ============ INÍCIO ============ -->
+<section id="page-inicio" class="page">
+  <div class="hero justify-center">
+    <div>
+      <p class="eyebrow">Hackaton - Física 2 - Lucas Gabriel, Tacyo Afonso e Yuri Muniz</p>
+      <h1 class="wordmark">RUIDÔ<span>Metro</span></h1>
+      <p class="lead">
+        Monitore a poluição sonora ao seu redor. Utilize o microfone do celular ou computador para medir os níveis de ruído, visualizar as ondas sonoras e analisar o espectro do som. Descubra quais regiões apresentam maior intensidade sonora e identifique possíveis áreas de poluição sonora.
+      </p>
+      <div class="cta">
+        <a class="btn primary" href="#monitor"><svg class="ic"><use href="#i-mic"/></svg>Iniciar monitoramento</a>
+        <a class="btn" href="#mapa"><svg class="ic"><use href="#i-pin"/></svg>Ver mapa</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec justify">
+    <h2>Como funciona</h2>
+    <p class="sub">Da captação do som à sua representação no mapa, em apenas quatro etapas.</p>
+    <div class="steps">
+      <div class="step"><h3>Captar</h3><p>O navegador pede permissão e abre o microfone do seu dispositivo. O som é lido em tempo real, sem gravação.</p></div>
+      <div class="step"><h3>Analisar</h3><p>O sinal sonoro é processado para estimar o nível de pressão sonora em decibéis. A Transformada Rápida de Fourier (FFT) separa o som em frequências, permitindo identificar sua frequência dominante.</p></div>
+      <div class="step"><h3>Classificar</h3><p>Com base no nível de ruído detectado, o ambiente é classificado como tranquilo, moderado ou crítico, com identificação visual por cores e indicadores em tempo real.</p></div>
+      <div class="step"><h3>Mapear</h3><p>Com sua autorização, a localização é registrada junto ao nível de ruído medido. O mapa apresenta os pontos de medição e um mapa de calor que permite identificar as regiões mais barulhentas por local e horário.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>A física por trás das medidas</h2>
+    <p class="sub">Os conceitos são apresentados em tempo real na página de monitoramento, com base nos sons captados pelo microfone.</p>
+    <div class="concepts">
+      <div class="concept"><h3>Ondas sonoras <small>p(t)</small></h3><p>O som é uma onda mecânica longitudinal, formada por variações de pressão que se propagam pelo ar. Em condições ambientes, sua velocidade de propagação é de aproximadamente 343 m/s.</p></div>
+      <div class="concept"><h3>Frequência <small>Hz</small></h3><p>Representa o número de oscilações da onda sonora por segundo. É medida em Hertz (Hz) e determina a percepção de sons graves ou agudos. O ouvido humano é capaz de perceber frequências aproximadamente entre 20 Hz e 20 kHz.</p></div>
+      <div class="concept"><h3>Amplitude <small>A</small></h3><p>Representa a intensidade da variação de pressão da onda sonora. Quando a amplitude da pressão sonora dobra, o nível de pressão sonora aumenta aproximadamente 6 dB</p></div>
+      <div class="concept"><h3>Intensidade sonora <small>W/m²</small></h3><p>Representa a potência sonora que atravessa uma determinada área por unidade de tempo. É medida em watts por metro quadrado (W/m²) e, em condições equivalentes, é proporcional ao quadrado da amplitude da pressão sonora.</p></div>
+      <div class="concept"><h3>Escala de decibéis <small>dB</small></h3><p>É uma escala logarítmica utilizada para representar o nível de intensidade sonora. Sua fórmula é L = 10 · log₁₀(I/I₀), em que I₀ = 10⁻¹² W/m² é a intensidade sonora de referência. A cada aumento de 10 dB, a intensidade sonora é multiplicada por 10.</p></div>
+      <div class="concept"><h3>Espectro de frequência <small>FFT</small></h3><p>A Transformada Rápida de Fourier (FFT) transforma o sinal sonoro do domínio do tempo para o domínio da frequência. O gráfico apresenta as diferentes frequências presentes no som e a magnitude de cada componente, permitindo identificar quais frequências predominam.</p></div>
+    </div>
+  </div>
+
+  <div class="sec two-col">
+    <div><h3><svg class="ic"><use href="#i-shield"/></svg>Privacidade em primeiro lugar</h3><p>Nenhuma gravação de áudio é armazenada. O som é processado diretamente no seu dispositivo e descartado após a análise. São registrados apenas a data, o horário, o nível sonoro em dB e a frequência dominante. A localização só é armazenada com sua autorização. Você pode interromper o monitoramento a qualquer momento.</p></div>
+    <div><h3><svg class="ic"><use href="#i-info"/></svg>Valores são estimativas</h3><p>Microfones de celulares e computadores possuem sensibilidades diferentes e podem aplicar filtros ao áudio captado. Por isso, os valores apresentados são estimativas e não substituem medições técnicas profissionais.</p></div>
+  </div>
+</section>
+
+<!-- ============ MONITORAMENTO ============ -->
+<section id="page-monitor" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Tempo real</p><h2>Monitoramento</h2></div>
+  </div>
+
+  <div class="card consent" id="consent">
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="opt-save" checked><span>Salvar medições<small>Medições registradas em tempo real no histórico local (sem apagar anteriores).</small></span></label>
+      <label class="opt"><input type="checkbox" id="opt-geo" checked><span>Usar minha localização<small>O navegador pedirá permissão. Sem autorização, a medição é salva no histórico sem marcador no mapa.</small></span></label>
+      <div class="btns">
+        <button class="btn primary" id="btn-start" type="button"><svg class="ic"><use href="#i-mic"/></svg>Autorizar microfone e iniciar</button>
+        <button class="btn" id="btn-demo" type="button">Testar com som simulado</button>
+        <button class="btn sm" id="btn-record-now" type="button">Registrar medição agora</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert" id="mon-error" role="alert" hidden><span id="mon-error-t"></span><button class="btn sm" id="btn-demo2" type="button">Usar som simulado</button></div>
+
+  <div class="card runbar" id="runbar" hidden>
+    <div class="st"><span class="dot-live"></span><div><span id="run-title">Monitorando o microfone</span> <span class="tag sim" id="run-sim" hidden>Simulação</span><small id="run-sub"></small></div></div>
+    <div class="btns" style="gap:8px">
+      <button class="btn sm" id="btn-record-live" type="button">Registrar medição agora</button>
+      <button class="btn stop" id="btn-stop" type="button"><svg class="ic"><use href="#i-stop"/></svg>Interromper monitoramento</button>
+    </div>
+  </div>
+
+  <p class="capt" id="mon-status-note" aria-live="polite"></p>
+
+  <div class="mon-grid">
+    <div class="card meter" id="meter" data-cls="idle">
+      <h3>Nível sonoro estimado</h3>
+      <div class="big"><span class="num" id="db-num">—</span><span class="unit">dB</span></div>
+      <div class="row"><span class="badge lg" id="cls-badge" data-cls="idle"><span id="cls-t">Aguardando</span></span></div>
+      <div class="scale" aria-hidden="true"><i id="scale-marker"></i></div>
+      <div class="ticks" aria-hidden="true"><span style="left:0">0</span><span style="left:31.25%">55</span><span style="left:50%">70</span><span style="left:100%">140</span></div>
+      <p class="cls-msg" id="cls-msg">Inicie o monitoramento para ver o nível do ambiente.</p>
+    </div>
+
+    <div class="card">
+      <h3>Sessão atual</h3>
+      <div class="mini">
+        <div><small>Média</small><b id="st-avg">—<em>dB</em></b></div>
+        <div><small>Pico</small><b id="st-max">—<em>dB</em></b></div>
+        <div><small>Frequência dominante</small><b id="st-freq">—<em>Hz</em></b></div>
+        <div><small>Medições salvas</small><b id="st-saved">0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card"><h3>Forma de onda</h3><canvas class="cv" id="cv-wave" aria-label="Gráfico da onda sonora em tempo real"></canvas><p class="capt">Pressão do ar ao longo de cerca de 30 ms. Escala automática.</p></div>
+    <div class="card"><h3>Espectro de frequência (FFT)</h3><canvas class="cv" id="cv-spec" aria-label="Espectro de frequência em tempo real"></canvas><p class="capt">Eixo de frequência em escala logarítmica, de 20 Hz a 20 kHz.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h3>Últimos 60 segundos</h3><canvas class="cv" id="cv-hist" aria-label="Histórico recente do nível sonoro"></canvas><p class="capt">Faixas verde, amarela e vermelha correspondem a tranquilo, moderado e crítico.</p></div>
+
+  <div class="mon-concepts">
+    <h3>Física ao vivo</h3>
+    <div class="concepts">
+      <div class="concept"><h3>Ondas sonoras <small>T e λ</small></h3><p>Representa as oscilações de pressão do som. O período (T) é o tempo de uma oscilação, enquanto o comprimento de onda (λ) é a distância entre dois pontos equivalentes consecutivos.</p><div class="lv" id="k-wave">—</div></div>
+      <div class="concept"><h3>Frequência <small>Hz</small></h3><p>Indica a frequência predominante do som, correspondente ao maior pico do espectro. Frequências abaixo de 250 Hz são classificadas como graves, enquanto acima de 2 kHz são consideradas agudas.</p><div class="lv" id="k-freq">—</div></div>
+      <div class="concept"><h3>Amplitude <small>A</small></h3><p>Estima a pressão sonora eficaz (RMS) a partir do nível em decibéis, utilizando a referência de 20 µPa (p₀).</p><div class="lv" id="k-amp">—</div></div>
+      <div class="concept"><h3>Intensidade sonora <small>W/m²</small></h3><p>Representa a potência sonora por unidade de área. É calculada a partir do nível sonoro, considerando I₀ = 10⁻¹² W/m², e é proporcional ao quadrado da amplitude da onda.</p><div class="lv" id="k-int">—</div></div>
+      <div class="concept"><h3>Escala de decibéis <small>dB</small></h3><p>L = Expressa a intensidade sonora em uma escala logarítmica, comparando-a com uma intensidade de referência. Cada aumento de 10 dB representa uma intensidade 10 vezes maior.</p><div class="lv" id="k-db">—</div></div>
+      <div class="concept"><h3>Espectro <small>FFT</small></h3><p>A FFT transforma o sinal sonoro do domínio do tempo para o domínio da frequência, permitindo identificar suas componentes. A resolução em frequência depende da quantidade de amostras e da taxa de amostragem.</p><div class="lv" id="k-spec">—</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAPA ============ -->
+<section id="page-mapa" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Geolocalização</p><h2>Mapa de poluição sonora</h2></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="fgroup"><span>Camadas</span>
+      <div class="chips" id="f-layer">
+        <button class="chip" type="button" data-layer="markers" aria-pressed="false">Marcadores</button>
+        <button class="chip" type="button" data-layer="heat" aria-pressed="false">Mapa de calor</button>
+        <button class="chip" type="button" data-layer="both" aria-pressed="true">Ambos</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Intensidade</span>
+      <div class="chips" id="f-cls">
+        <button class="chip" type="button" data-cls="quiet" aria-pressed="true"><i class="d"></i>Tranquilo</button>
+        <button class="chip" type="button" data-cls="mod" aria-pressed="true"><i class="d"></i>Moderado</button>
+        <button class="chip" type="button" data-cls="crit" aria-pressed="true"><i class="d"></i>Crítico</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Horário do dia</span>
+      <div class="chips" id="f-slot">
+        <button class="chip" type="button" data-slot="all" aria-pressed="true">Todos</button>
+        <button class="chip" type="button" data-slot="madrugada" aria-pressed="false">Madrugada</button>
+        <button class="chip" type="button" data-slot="manha" aria-pressed="false">Manhã</button>
+        <button class="chip" type="button" data-slot="tarde" aria-pressed="false">Tarde</button>
+        <button class="chip" type="button" data-slot="noite" aria-pressed="false">Noite</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Período</span>
+      <select id="f-period" aria-label="Período"><option value="all">Tudo</option><option value="7d">Últimos 7 dias</option><option value="24h">Últimas 24 h</option></select>
+    </div>
+  </div>
+
+  <div class="map-wrap">
+    <div>
+      <div class="map-box">
+        <div id="map" role="application" aria-label="Mapa interativo de poluição sonora"></div>
+        <div class="note" id="tile-note" hidden>Os tiles do OpenStreetMap não carregaram neste ambiente. Marcadores, mapa de calor e rankings continuam funcionando.</div>
+        <div class="note" id="map-fallback" hidden>A biblioteca de mapas não carregou. Confira a conexão e recarregue. Os rankings ao lado continuam disponíveis.</div>
+      </div>
+      <div class="legend">
+        <span>Nível: <span class="ramp"></span> 30 a 140 dB</span>
+        <span class="badge key" data-cls="quiet">Tranquilo</span><span class="badge key" data-cls="mod">Moderado</span><span class="badge key" data-cls="crit">Crítico</span>
+        <span id="map-count"></span>
+      </div>
+      <p class="capt">Endereços identificados por geocodificação reversa · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>.</p>
+    </div>
+
+    <aside class="rank card" id="rank">
+      <div><h3>Mais barulhentas</h3><ul class="rl" id="rk-loud"></ul></div>
+      <div><h3>Mais silenciosas</h3><ul class="rl" id="rk-quiet"></ul></div>
+      <div class="actions" style="margin-top:0">
+        <button class="btn sm" id="btn-fit" type="button">Centralizar dados</button>
+        <button class="btn sm" id="btn-me" type="button"><svg class="ic"><use href="#i-pin"/></svg>Minha posição</button>
+      </div>
+      <p class="capt" id="me-note" hidden></p>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section id="page-dashboard" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Análise de dados</p><h2>Dashboard</h2></div>
+    <div class="toolbar" style="margin:0">
+      <div class="fgroup"><span>Período</span><select id="d-period" aria-label="Período"><option value="all">Tudo</option><option value="7d" selected>Últimos 7 dias</option><option value="24h">Últimas 24 h</option></select></div>
+      <div class="fgroup"><span>Origem</span><select id="d-src" aria-label="Origem dos dados"><option value="all" selected>Todas</option><option value="real">Minhas medições</option></select></div>
+    </div>
+  </div>
+  <div class="tiles" id="tiles">
+    <div class="tile" id="t-now" data-cls="idle"><small id="t-now-l">Última medição</small><b><span id="t-now-v">—</span><em>dB</em></b><div class="s2" id="t-now-s">sem medições</div></div>
+    <div class="tile"><small>Média</small><b><span id="t-avg">—</span><em>dB</em></b><div class="s2" id="t-avg-s"></div></div>
+    <div class="tile" id="t-max-c"><small>Maior nível</small><b><span id="t-max">—</span><em>dB</em></b><div class="s2" id="t-max-s"></div></div>
+    <div class="tile"><small>Medições</small><b><span id="t-n">0</span></b><div class="s2" id="t-n-s"></div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Intensidade sonora por horário (dB)</h3><div class="chart"><canvas id="ch-hour" role="img" aria-label="Gráfico de intensidade sonora por horário"></canvas></div></div>
+    <div class="card"><h3>Comparação entre regiões (dB)</h3><div class="chart"><canvas id="ch-region" role="img" aria-label="Gráfico de comparação entre regiões"></canvas></div></div>
+    <div class="card"><h3>Média diária (dB)</h3><div class="chart"><canvas id="ch-day" role="img" aria-label="Gráfico da média diária"></canvas></div></div>
+    <div class="card"><h3>Distribuição por classe</h3><div class="chart"><canvas id="ch-cls" role="img" aria-label="Gráfico de distribuição por classe"></canvas></div></div>
+    <div class="card"><h3>Horários mais barulhentos</h3><ul class="hrs" id="hrs"></ul></div>
+    <div class="card"><h3>Padrões e previsão</h3>
+      <div class="fc">
+        <div><small class="muted">Pico estimado</small><div class="big2" id="fc-peak">—</div></div>
+        <div><small class="muted">Estimativa para este horário</small><div class="big2" id="fc-now">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Histórico de medições</h3>
+    <div class="tw"><table class="tbl"><thead><tr><th>Data e hora</th><th>Local</th><th>Nível</th><th>Classe</th><th>Frequência</th><th>Origem</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="actions">
+      <button class="btn sm" id="btn-more" type="button">Ver mais</button>
+      <button class="btn sm stop" id="btn-clear" type="button">Apagar minhas medições</button>
+    </div>
+    <p class="capt" id="store-note"></p>
+  </div>
+</section>
+
+<p class="foot justify-center">Os valores medidos pelo microfone são estimativas e dependem do aparelho. Suas medições são salvas localmente no navegador.</p>
+
+</main>
+
+<nav class="tabbar" aria-label="Principal">
+  <a href="#inicio" data-route="inicio"><svg class="ic"><use href="#i-home"/></svg>Início</a>
+  <a href="#monitor" data-route="monitor"><svg class="ic"><use href="#i-mic"/></svg>Monitor</a>
+  <a href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-pin"/></svg>Mapa</a>
+  <a href="#dashboard" data-route="dashboard"><svg class="ic"><use href="#i-chart"/></svg>Dashboard</a>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+(function () {
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const STORAGE_KEY = 'ruidometro_real_measurements_v1';
+  const ADDRESS_CACHE_KEY = 'ruidometro_reverse_geocode_street_v2';
+
+  window.S = window.S || {
+    route: 'inicio',
+    running: false,
+    sim: false,
+    readings: [],
+    mapFilter: {
+      layer: 'both',
+      cls: { quiet: true, mod: true, crit: true },
+      slot: 'all',
+      period: 'all'
+    },
+    dashFilter: {
+      period: '7d',
+      src: 'all',
+      limit: 15
+    }
+  };
+
+  function classifyDb(db) {
+    const val = Number(db);
+    if (!Number.isFinite(val)) return { key: 'quiet', label: 'Tranquilo' };
+    if (val < 55) return { key: 'quiet', label: 'Tranquilo' };
+    if (val <= 70) return { key: 'mod', label: 'Moderado' };
+    return { key: 'crit', label: 'Crítico' };
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[char]);
+  }
+
+  function colorByDb(db) {
+    const val = Number(db) || 0;
+    if (val < 55) return '#22c55e';
+    if (val <= 70) return '#eab308';
+    return '#ef4444';
+  }
+
+  function getSlotFromDate(ts) {
+    const d = new Date(ts || Date.now());
+    const h = d.getHours();
+    if (h >= 0 && h < 6) return 'madrugada';
+    if (h >= 6 && h < 12) return 'manha';
+    if (h >= 12 && h < 18) return 'tarde';
+    return 'noite';
+  }
+
+  function formatDateTime(ts) {
+    return new Date(ts || Date.now()).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+
+  /* ---------- STORE CENTRALIZADO (SEM DUPLICATAS, SEM APAGAR HISTÓRICO) ---------- */
+  const listeners = new Set();
+
+  function readSavedReal() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writeSavedReal(realList) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(realList));
+    } catch (_) {}
+  }
+
+  function normalizeMeasurement(item) {
+    const ts = typeof item.ts === 'number' && Number.isFinite(item.ts) ? item.ts : Date.now();
+    const db = Math.round(Number(item.db));
+    const safeDb = Number.isFinite(db) ? Math.max(20, Math.min(140, db)) : 45;
+    const clsInfo = classifyDb(safeDb);
+    const hasLat = typeof item.lat === 'number' && Number.isFinite(item.lat);
+    const hasLng = typeof item.lng === 'number' && Number.isFinite(item.lng);
+    const src = item.src === 'real' ? 'real' : 'demo';
+
+    return {
+      id: item.id || `${src}-${ts}-${safeDb}-${Math.random().toString(36).slice(2, 7)}`,
+      ts,
+      time: item.time || formatDateTime(ts),
+      location: item.location || (src === 'real' ? (hasLat && hasLng ? 'Medição em tempo real' : 'Medição sem localização') : 'Ponto de demonstração'),
+      region: item.region || (src === 'real' ? 'Tempo real' : 'Geral'),
+      lat: hasLat && hasLng ? item.lat : null,
+      lng: hasLat && hasLng ? item.lng : null,
+      db: safeDb,
+      cls: clsInfo.key,
+      clsLabel: clsInfo.label,
+      freq: item.freq != null && Number.isFinite(Number(item.freq)) ? Math.round(Number(item.freq)) : null,
+      slot: item.slot || getSlotFromDate(ts),
+      src
+    };
+  }
+
+  function rebuildUnifiedState() {
+    const seen = new Set();
+    const merged = readSavedReal()
+      .filter((rec) => rec && rec.src === 'real')
+      .map(normalizeMeasurement)
+      .filter((rec) => !seen.has(rec.id) && seen.add(rec.id));
+
+    merged.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    window.S.readings = merged;
+    return merged;
+  }
+
+  function notifyDataUpdated(addedRecord) {
+    listeners.forEach((fn) => {
+      try {
+        fn(window.S.readings, addedRecord || null);
+      } catch (e) {
+        console.error('Erro ao notificar componente:', e);
+      }
+    });
+  }
+
+  function addMeasurement(rawInput) {
+    const record = normalizeMeasurement(rawInput);
+    const current = rebuildUnifiedState();
+
+    // Evita registro duplicado exato por id
+    if (current.some((r) => r.id === record.id)) {
+      return { added: false, record, total: current.length };
+    }
+
+    if (record.src !== 'real') {
+      return { added: false, record, total: current.length };
+    }
+    const existingReal = readSavedReal().map(normalizeMeasurement);
+    existingReal.unshift(record);
+    writeSavedReal(existingReal);
+
+    rebuildUnifiedState();
+    notifyDataUpdated(record);
+    return { added: true, record, total: window.S.readings.length };
+  }
+
+  function updateMeasurementLocation(id, location) {
+    const saved = readSavedReal();
+    const index = saved.findIndex((record) => record.id === id);
+    if (index < 0) return false;
+
+    saved[index] = { ...saved[index], location };
+    writeSavedReal(saved);
+    const updated = rebuildUnifiedState().find((record) => record.id === id);
+    if (!updated) return false;
+    notifyDataUpdated(updated);
+    return true;
+  }
+
+  function clearRealMeasurements() {
+    writeSavedReal([]);
+    rebuildUnifiedState();
+    notifyDataUpdated(null);
+  }
+
+  function subscribeData(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
+  window.RuidometroStore = {
+    getAll: () => rebuildUnifiedState(),
+    addMeasurement,
+    updateMeasurementLocation,
+    clearRealMeasurements,
+    subscribe: subscribeData,
+    classifyDb,
+    colorByDb,
+    getSlotFromDate
+  };
+
+  /* ---------- MAPA LEAFLET + OPENSTREETMAP + HEAT + RANKINGS ---------- */
+  let leafletMap = null;
+  let markersLayer = null;
+  let heatCanvasLayer = null;
+  let userLocationMarker = null;
+  let hasFittedOnce = false;
+
+  function setMapFallbackVisible(visible) {
+    const fallbackEl = $('#map-fallback');
+    if (fallbackEl) fallbackEl.hidden = !visible;
+  }
+
+  function getFilteredMapPoints() {
+    const all = rebuildUnifiedState().filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number');
+    const f = window.S.mapFilter;
+    const now = Date.now();
+    const maxAge = f.period === '24h' ? 24 * 3600 * 1000 : f.period === '7d' ? 7 * 24 * 3600 * 1000 : Infinity;
+
+    return all.filter((p) => {
+      const clsKey = p.cls || classifyDb(p.db).key;
+      if (!f.cls[clsKey]) return false;
+      const slotKey = p.slot || getSlotFromDate(p.ts);
+      if (f.slot !== 'all' && slotKey !== f.slot) return false;
+      if (Number.isFinite(maxAge) && (now - (p.ts || now)) > maxAge) return false;
+      return true;
+    });
+  }
+
+  function ensureHeatLayer() {
+    if (!leafletMap || typeof L === 'undefined') return null;
+    if (heatCanvasLayer) return heatCanvasLayer;
+
+    const HeatOverlay = L.Layer.extend({
+      initialize: function (points) {
+        this._points = points || [];
+      },
+      setPoints: function (points) {
+        this._points = points || [];
+        if (this._map) this._redraw();
+      },
+      onAdd: function (map) {
+        this._map = map;
+        this._canvas = L.DomUtil.create('canvas', 'ruido-heat-canvas');
+        this._canvas.style.position = 'absolute';
+        this._canvas.style.top = '0';
+        this._canvas.style.left = '0';
+        this._canvas.style.pointerEvents = 'none';
+        this._canvas.style.zIndex = '350';
+        map.getPanes().overlayPane.appendChild(this._canvas);
+        map.on('moveend zoomend resize viewreset', this._redraw, this);
+        this._redraw();
+      },
+      onRemove: function (map) {
+        map.off('moveend zoomend resize viewreset', this._redraw, this);
+        if (this._canvas && this._canvas.parentNode) {
+          this._canvas.parentNode.removeChild(this._canvas);
+        }
+        this._canvas = null;
+        this._map = null;
+      },
+      _redraw: function () {
+        if (!this._map || !this._canvas) return;
+        const size = this._map.getSize();
+        const topLeft = this._map.containerPointToLayerPoint([0, 0]);
+        L.DomUtil.setPosition(this._canvas, topLeft);
+        this._canvas.width = size.x;
+        this._canvas.height = size.y;
+
+        const ctx = this._canvas.getContext('2d');
+        ctx.clearRect(0, 0, size.x, size.y);
+
+        if (!this._points || this._points.length === 0) return;
+
+        this._points.forEach((pt) => {
+          const pos = this._map.latLngToContainerPoint([pt.lat, pt.lng]);
+          const norm = Math.max(0.15, Math.min(1, ((Number(pt.db) || 45) - 35) / 50));
+          const radius = 38 + norm * 48;
+
+          const grad = ctx.createRadialGradient(pos.x, pos.y, 2, pos.x, pos.y, radius);
+          if (norm >= 0.7) {
+            grad.addColorStop(0, 'rgba(239, 68, 68, 0.58)');
+            grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.30)');
+            grad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          } else if (norm >= 0.4) {
+            grad.addColorStop(0, 'rgba(234, 179, 8, 0.52)');
+            grad.addColorStop(0.55, 'rgba(132, 204, 22, 0.24)');
+            grad.addColorStop(1, 'rgba(234, 179, 8, 0)');
+          } else {
+            grad.addColorStop(0, 'rgba(34, 197, 94, 0.48)');
+            grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.20)');
+            grad.addColorStop(1, 'rgba(34, 197, 94, 0)');
+          }
+
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    });
+
+    heatCanvasLayer = new HeatOverlay([]);
+    return heatCanvasLayer;
+  }
+
+  function initLeafletMap() {
+    const mapEl = $('#map');
+    const tileNoteEl = $('#tile-note');
+    if (!mapEl) return null;
+
+    if (typeof window.L === 'undefined' || typeof window.L.map !== 'function') {
+      setMapFallbackVisible(true);
+      return null;
+    }
+
+    if (!leafletMap) {
+      try {
+        leafletMap = L.map('map', {
+          center: [-18.9736, -49.4635],
+          zoom: 13,
+          zoomControl: true,
+          scrollWheelZoom: true
+        });
+
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          minZoom: 2,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+        });
+
+        let tileErrors = 0;
+        osmLayer.on('tileerror', () => {
+          tileErrors += 1;
+          if (tileErrors >= 6 && tileNoteEl) {
+            tileNoteEl.hidden = false;
+          }
+        });
+        osmLayer.on('tileload', () => {
+          if (tileNoteEl) tileNoteEl.hidden = true;
+        });
+
+        osmLayer.addTo(leafletMap);
+        markersLayer = L.layerGroup().addTo(leafletMap);
+        ensureHeatLayer();
+        setMapFallbackVisible(false);
+      } catch (err) {
+        console.error('Falha ao inicializar instância do Leaflet:', err);
+        leafletMap = null;
+        setMapFallbackVisible(true);
+        return null;
+      }
+    } else {
+      setMapFallbackVisible(false);
+    }
+
+    setTimeout(() => {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 80);
+
+    return leafletMap;
+  }
+
+  function renderRankings(points) {
+    const rkLoud = $('#rk-loud');
+    const rkQuiet = $('#rk-quiet');
+    const countEl = $('#map-count');
+
+    if (countEl) {
+      countEl.textContent = `${points.length} ${points.length === 1 ? 'ponto' : 'pontos'}`;
+    }
+
+    const sorted = [...points].sort((a, b) => Number(b.db) - Number(a.db));
+    const loud = sorted.slice(0, 4);
+    const quiet = [...sorted].reverse().slice(0, 4);
+
+    if (rkLoud) {
+      rkLoud.innerHTML = loud.length
+        ? loud.map((p) => `<li><span>${escapeHtml(p.location || 'Local')}</span><b>${p.db} dB</b></li>`).join('')
+        : '<li><span>Nenhum ponto no filtro</span><b>—</b></li>';
+    }
+    if (rkQuiet) {
+      rkQuiet.innerHTML = quiet.length
+        ? quiet.map((p) => `<li><span>${escapeHtml(p.location || 'Local')}</span><b>${p.db} dB</b></li>`).join('')
+        : '<li><span>Nenhum ponto no filtro</span><b>—</b></li>';
+    }
+  }
+
+  function updateMapView(options) {
+    const opts = options || {};
+    const shouldFit = Boolean(opts.fit);
+    const focusPoint = opts.focusPoint || null;
+
+    const map = initLeafletMap();
+    const pts = getFilteredMapPoints();
+    renderRankings(pts);
+
+    if (!map) return;
+
+    const layerMode = window.S.mapFilter.layer || 'both';
+    const showMarkers = layerMode === 'markers' || layerMode === 'both';
+    const showHeat = layerMode === 'heat' || layerMode === 'both';
+
+    if (markersLayer) {
+      markersLayer.clearLayers();
+      if (showMarkers) {
+        pts.forEach((p) => {
+          const col = colorByDb(p.db);
+          const info = classifyDb(p.db);
+          const srcLabel = p.src === 'real' ? 'Medição real' : 'Demonstração';
+          const icon = L.divIcon({
+            className: 'ruido-pin',
+            html: `<div class="ruido-pin-dot" style="background:${col};box-shadow:0 0 10px ${col}"></div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+          L.marker([p.lat, p.lng], { icon })
+            .bindPopup(
+            `<strong>${escapeHtml(p.location || 'Medição')}</strong><br>` +
+              `${p.db} dB · <span>${info.label}</span> (${srcLabel})<br>` +
+              `<small>${p.time || ''} · ${p.freq ? p.freq + ' Hz' : '—'}</small>`
+            )
+            .addTo(markersLayer);
+        });
+      }
+    }
+
+    const heat = ensureHeatLayer();
+    if (heat) {
+      heat.setPoints(pts);
+      if (showHeat && !map.hasLayer(heat)) {
+        heat.addTo(map);
+      } else if (!showHeat && map.hasLayer(heat)) {
+        map.removeLayer(heat);
+      }
+    }
+
+    if (focusPoint && typeof focusPoint.lat === 'number' && typeof focusPoint.lng === 'number') {
+      map.setView([focusPoint.lat, focusPoint.lng], Math.max(map.getZoom(), 15));
+      hasFittedOnce = true;
+    } else if (pts.length > 0 && (shouldFit || !hasFittedOnce)) {
+      const bounds = L.latLngBounds(pts.map((p) => [p.lat, p.lng]));
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [36, 36], maxZoom: 15 });
+        hasFittedOnce = true;
+      }
+    }
+
+    setTimeout(() => {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 100);
+  }
+
+  function bindMapControls() {
+    $$('#f-layer .chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $$('#f-layer .chip').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+        window.S.mapFilter.layer = btn.dataset.layer || 'both';
+        updateMapView({ fit: false });
+      });
+    });
+
+    $$('#f-cls .chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.cls;
+        const next = btn.getAttribute('aria-pressed') !== 'true';
+        btn.setAttribute('aria-pressed', String(next));
+        if (key) window.S.mapFilter.cls[key] = next;
+        updateMapView({ fit: false });
+      });
+    });
+
+    $$('#f-slot .chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $$('#f-slot .chip').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+        window.S.mapFilter.slot = btn.dataset.slot || 'all';
+        updateMapView({ fit: false });
+      });
+    });
+
+    const periodSel = $('#f-period');
+    if (periodSel) {
+      periodSel.addEventListener('change', () => {
+        window.S.mapFilter.period = periodSel.value || 'all';
+        updateMapView({ fit: false });
+      });
+    }
+
+    const btnFit = $('#btn-fit');
+    if (btnFit) {
+      btnFit.addEventListener('click', () => {
+        updateMapView({ fit: true });
+      });
+    }
+
+    const btnMe = $('#btn-me');
+    const meNote = $('#me-note');
+    if (btnMe) {
+      btnMe.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          if (meNote) {
+            meNote.hidden = false;
+            meNote.textContent = 'Geolocalização não disponível neste navegador.';
+          }
+          return;
+        }
+        if (meNote) {
+          meNote.hidden = false;
+          meNote.textContent = 'Buscando localização atual...';
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords;
+            const map = initLeafletMap();
+            if (map) {
+              map.setView([latitude, longitude], 16);
+              if (userLocationMarker) {
+                map.removeLayer(userLocationMarker);
+              }
+              const meIcon = L.divIcon({
+                className: 'ruido-pin',
+                html: '<div class="ruido-me-dot"></div>',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+              });
+              userLocationMarker = L.marker([latitude, longitude], { icon: meIcon })
+                .addTo(map)
+                .bindPopup('Sua posição atual')
+                .openPopup();
+            }
+            if (meNote) {
+              meNote.hidden = false;
+              meNote.textContent = `Posição: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+            }
+          },
+          (err) => {
+            if (meNote) {
+              meNote.hidden = false;
+              meNote.textContent = `Não foi possível obter a localização (${err.message}).`;
+            }
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+    }
+  }
+
+  /* ---------- MONITORAMENTO (MICROFONE + SIMULAÇÃO + REGISTRO REAL) ---------- */
+  let monTimer = null;
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let histValues = [];
+  let sessionDb = [];
+  let lastInstantDb = null;
+  let lastInstantFreq = null;
+  let savedCount = 0;
+  let smoothedMicDb = null;
+  const MIC_FULL_SCALE_SPL_DB = 94;
+
+  function setMonitorNote(text) {
+    const el = $('#mon-status-note');
+    if (el) el.textContent = text || '';
+  }
+
+  function requestCurrentGeo(callback) {
+    const geoEnabled = Boolean($('#opt-geo')?.checked);
+    if (!geoEnabled) {
+      callback(null, null, 'sem_autorizacao');
+      return;
+    }
+    if (!navigator.geolocation) {
+      callback(null, null, 'indisponivel');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => callback(pos.coords.latitude, pos.coords.longitude, 'ok'),
+      () => callback(null, null, 'negado_ou_erro'),
+      { enableHighAccuracy: true, timeout: 6000, maximumAge: 5000 }
+    );
+  }
+
+  const addressRequests = new Map();
+  let addressQueue = Promise.resolve();
+  let lastAddressRequestAt = 0;
+
+  function readAddressCache() {
+    try {
+      const cache = JSON.parse(localStorage.getItem(ADDRESS_CACHE_KEY) || '{}');
+      return cache && typeof cache === 'object' && !Array.isArray(cache) ? cache : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function reverseGeocode(lat, lng) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Promise.resolve(null);
+
+    const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+    const cached = readAddressCache()[key];
+    if (typeof cached === 'string' && cached) return Promise.resolve(cached);
+    if (addressRequests.has(key)) return addressRequests.get(key);
+
+    const request = addressQueue.then(async () => {
+      const waitMs = Math.max(0, 1000 - (Date.now() - lastAddressRequestAt));
+      if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+      lastAddressRequestAt = Date.now();
+
+      const controller = typeof AbortController === 'function' ? new AbortController() : null;
+      let timeoutId;
+      const timeout = new Promise((resolve, reject) => {
+        timeoutId = setTimeout(() => {
+          if (controller) controller.abort();
+          reject(new Error('Tempo limite da geocodificação excedido.'));
+        }, 5000);
+      });
+
+      try {
+        const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18' +
+          '&accept-language=pt-BR&lat=' + encodeURIComponent(lat) +
+          '&lon=' + encodeURIComponent(lng);
+        const options = controller ? { signal: controller.signal } : {};
+        const response = await Promise.race([fetch(url, options), timeout]);
+        if (!response.ok) throw new Error(`Nominatim respondeu HTTP ${response.status}.`);
+        const result = await Promise.race([response.json(), timeout]);
+        const address = result && result.address ? result.address : {};
+        const street = address.road || address.pedestrian || address.footway;
+        const location = street || null;
+        if (!location) return null;
+
+        const cache = readAddressCache();
+        cache[key] = location;
+        try {
+          localStorage.setItem(ADDRESS_CACHE_KEY, JSON.stringify(cache));
+        } catch (err) {
+          console.warn('Não foi possível salvar o cache de endereços:', err);
+        }
+        return location;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    });
+
+    addressQueue = request.then(() => undefined, () => undefined);
+    addressRequests.set(key, request);
+    request.then(
+      () => addressRequests.delete(key),
+      () => addressRequests.delete(key)
+    );
+    return request;
+  }
+
+  // Busca a rua das medições salvas que ainda não têm o nome
+  async function fixOldLocations() {
+    const pending = window.RuidometroStore.getAll().filter((r) =>
+      r.lat !== null && r.lng !== null &&
+      /^(Microfone|Rua não identificada|Medição em tempo real)/.test(r.location)
+    );
+    for (const r of pending) {
+      try {
+        const location = await reverseGeocode(r.lat, r.lng);
+        window.RuidometroStore.updateMeasurementLocation(r.id, location || 'Rua não identificada');
+      } catch (err) {
+        console.warn('Não foi possível identificar o endereço da medição:', err);
+      }
+    }
+  }
+
+  function recordCurrentMeasurement(sourceType) {
+    const saveEnabled = Boolean($('#opt-save')?.checked);
+    if (sourceType !== 'real' || window.S.sim) {
+      setMonitorNote('Simulação ativa: os valores não são salvos no histórico.');
+      return;
+    }
+    if (!saveEnabled) {
+      setMonitorNote('Salvar medições está desmarcado; marque a opção para registrar.');
+      return;
+    }
+
+    const dbVal = lastInstantDb != null ? lastInstantDb : (sessionDb.length ? sessionDb[sessionDb.length - 1] : 46);
+    const freqVal = lastInstantFreq != null ? lastInstantFreq : 240;
+    const isRealMic = sourceType === 'real' && !window.S.sim;
+
+    requestCurrentGeo((lat, lng, geoStatus) => {
+      const now = Date.now();
+      const clsInfo = classifyDb(dbVal);
+      const hasCoords = typeof lat === 'number' && typeof lng === 'number';
+
+      const payload = {
+        id: `${isRealMic ? 'real' : 'demo-live'}-${now}-${Math.round(dbVal)}`,
+        ts: now,
+        time: formatDateTime(now),
+        location: hasCoords ? 'Rua não identificada' : 'Sem localização',
+        region: isRealMic ? 'Tempo real' : 'Simulação',
+        lat: hasCoords ? lat : null,
+        lng: hasCoords ? lng : null,
+        db: Math.round(dbVal),
+        cls: clsInfo.key,
+        clsLabel: clsInfo.label,
+        freq: Math.round(freqVal),
+        slot: getSlotFromDate(now),
+        src: isRealMic ? 'real' : 'demo'
+      };
+
+      const res = window.RuidometroStore.addMeasurement(payload);
+      if (res.added) {
+        savedCount += 1;
+        const stSaved = $('#st-saved');
+        if (stSaved) stSaved.textContent = String(savedCount);
+
+        if (hasCoords) {
+          setMonitorNote(`Medição registrada (${payload.db} dB · ${clsInfo.label}) com localização no mapa.`);
+        } else if (geoStatus === 'sem_autorizacao') {
+          setMonitorNote(`Medição registrada (${payload.db} dB · ${clsInfo.label}) no histórico sem localização.`);
+        } else {
+          setMonitorNote(`Medição registrada (${payload.db} dB · ${clsInfo.label}) sem coordenadas (permissão não concedida).`);
+        }
+
+        if (isRealMic && hasCoords) {
+          reverseGeocode(lat, lng).then((location) => {
+            if (location) window.RuidometroStore.updateMeasurementLocation(payload.id, location);
+          }).catch((err) => {
+            console.warn('Não foi possível identificar o endereço da medição:', err);
+          });
+        }
+      }
+    });
+  }
+
+  function drawCanvases(dbVal, freqVal, isSim) {
+    const wCanvas = $('#cv-wave');
+    const sCanvas = $('#cv-spec');
+    const hCanvas = $('#cv-hist');
+
+    if (wCanvas) {
+      const ctx = wCanvas.getContext('2d');
+      const w = wCanvas.width = wCanvas.clientWidth || 400;
+      const h = wCanvas.height = wCanvas.clientHeight || 140;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const amp = Math.min(h * 0.42, Math.max(6, (dbVal - 30) * 1.1));
+      const t = performance.now() * 0.008;
+      for (let x = 0; x < w; x += 2) {
+        const y = h / 2 + Math.sin(x * 0.045 + t) * amp * Math.cos(x * 0.012);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    if (sCanvas) {
+      const ctx = sCanvas.getContext('2d');
+      const w = sCanvas.width = sCanvas.clientWidth || 400;
+      const h = sCanvas.height = sCanvas.clientHeight || 140;
+      ctx.clearRect(0, 0, w, h);
+      const bars = 36;
+      const bw = w / bars;
+      for (let i = 0; i < bars; i++) {
+        const dist = Math.abs(i / bars - Math.min(0.85, (freqVal || 250) / 4000));
+        const mag = Math.max(0.08, Math.exp(-dist * 5) * ((dbVal || 45) / 85));
+        const bh = mag * (h - 14);
+        ctx.fillStyle = mag > 0.65 ? '#ef4444' : mag > 0.35 ? '#eab308' : '#22c55e';
+        ctx.fillRect(i * bw + 1, h - bh, Math.max(2, bw - 3), bh);
+      }
+    }
+
+    if (hCanvas) {
+      const ctx = hCanvas.getContext('2d');
+      const w = hCanvas.width = hCanvas.clientWidth || 600;
+      const h = hCanvas.height = hCanvas.clientHeight || 120;
+      ctx.clearRect(0, 0, w, h);
+      if (histValues.length > 1) {
+        ctx.strokeStyle = isSim ? '#c084fc' : '#22c55e';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        histValues.forEach((v, idx) => {
+          const x = (idx / Math.max(1, histValues.length - 1)) * w;
+          const y = h - Math.min(1, Math.max(0, v / 110)) * (h - 12) - 6;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+    }
+  }
+
+  function updateMeterUI(db, freq) {
+    lastInstantDb = db;
+    lastInstantFreq = freq;
+
+    const info = classifyDb(db);
+    const dbNum = $('#db-num');
+    const badge = $('#cls-badge');
+    const clsT = $('#cls-t');
+    const clsMsg = $('#cls-msg');
+    const marker = $('#scale-marker');
+    const meter = $('#meter');
+
+    if (dbNum) dbNum.textContent = String(Math.round(db));
+    if (badge) badge.dataset.cls = info.key;
+    if (meter) meter.dataset.cls = info.key;
+    if (clsT) clsT.textContent = info.label;
+    if (clsMsg) {
+      clsMsg.textContent = info.key === 'quiet'
+        ? 'Ambiente silencioso dentro dos parâmetros confortáveis.'
+        : info.key === 'mod'
+          ? 'Nível sonoro moderado; atenção a exposições prolongadas.'
+          : 'Nível elevado de ruído; possível área de poluição sonora.';
+    }
+    if (marker) {
+      const pct = Math.max(0, Math.min(100, (db / 140) * 100));
+      marker.style.left = pct + '%';
+    }
+
+    sessionDb.push(db);
+    const avg = sessionDb.reduce((a, b) => a + b, 0) / sessionDb.length;
+    const max = Math.max(...sessionDb);
+
+    const stAvg = $('#st-avg');
+    const stMax = $('#st-max');
+    const stFreq = $('#st-freq');
+    if (stAvg) stAvg.innerHTML = `${avg.toFixed(1)}<em>dB</em>`;
+    if (stMax) stMax.innerHTML = `${Math.round(max)}<em>dB</em>`;
+    if (stFreq) stFreq.innerHTML = `${Math.round(freq)}<em>Hz</em>`;
+
+    const period = 1 / Math.max(20, freq);
+    const lambda = 343 / Math.max(20, freq);
+    const rmsPa = 20e-6 * Math.pow(10, db / 20);
+    const inten = 1e-12 * Math.pow(10, db / 10);
+
+    const kWave = $('#k-wave');
+    const kFreq = $('#k-freq');
+    const kAmp = $('#k-amp');
+    const kInt = $('#k-int');
+    const kDb = $('#k-db');
+    const kSpec = $('#k-spec');
+    if (kWave) kWave.textContent = `T = ${(period * 1000).toFixed(2)} ms · λ = ${lambda.toFixed(2)} m`;
+    if (kFreq) kFreq.textContent = `${Math.round(freq)} Hz (${freq < 250 ? 'Grave' : freq > 2000 ? 'Agudo' : 'Médio'})`;
+    if (kAmp) kAmp.textContent = `${(rmsPa * 1000).toFixed(2)} mPa (RMS)`;
+    if (kInt) kInt.textContent = `${inten.toExponential(2)} W/m²`;
+    if (kDb) kDb.textContent = `L ≈ ${db.toFixed(1)} dB SPL`;
+    if (kSpec) kSpec.textContent = `Pico dominante em ${Math.round(freq)} Hz`;
+
+    histValues.push(db);
+    if (histValues.length > 60) histValues.shift();
+  }
+
+  function stopMonitoring() {
+    window.S.running = false;
+    window.S.sim = false;
+    if (monTimer) {
+      clearInterval(monTimer);
+      monTimer = null;
+    }
+    if (micStream) {
+      micStream.getTracks().forEach((t) => t.stop());
+      micStream = null;
+    }
+    if (audioCtx && audioCtx.state !== 'closed') {
+      audioCtx.close().catch(() => {});
+      audioCtx = null;
+    }
+    const runbar = $('#runbar');
+    const consent = $('#consent');
+    const livechip = $('#livechip');
+    if (runbar) runbar.hidden = true;
+    if (consent) consent.hidden = false;
+    if (livechip) livechip.classList.remove('on');
+    setMonitorNote('Monitoramento encerrado.');
+  }
+
+  function startSimulation() {
+    stopMonitoring();
+    window.S.running = true;
+    window.S.sim = true;
+    sessionDb = [];
+    histValues = [];
+
+    const consent = $('#consent');
+    const runbar = $('#runbar');
+    const runSim = $('#run-sim');
+    const runTitle = $('#run-title');
+    const runSub = $('#run-sub');
+    const monErr = $('#mon-error');
+    const livechip = $('#livechip');
+
+    if (consent) consent.hidden = true;
+    if (runbar) runbar.hidden = false;
+    if (runSim) runSim.hidden = false;
+    if (runTitle) runTitle.textContent = 'Monitorando som simulado';
+    if (runSub) runSub.textContent = 'Sinal acústico sintético ativo';
+    if (monErr) monErr.hidden = true;
+    if (livechip) livechip.classList.add('on');
+    setMonitorNote('Simulação ativa: os valores não são salvos no histórico.');
+
+    let ticks = 0;
+    monTimer = setInterval(() => {
+      ticks += 1;
+      const db = Math.round(48 + Math.sin(ticks * 0.35) * 18 + Math.random() * 10);
+      const freq = Math.round(180 + Math.abs(Math.cos(ticks * 0.2)) * 950);
+      updateMeterUI(db, freq);
+      drawCanvases(db, freq, true);
+
+      if (ticks === 1 || ticks % 12 === 0) {
+        recordCurrentMeasurement('demo');
+      }
+    }, 500);
+  }
+
+  async function startMicrophone() {
+    stopMonitoring();
+    const monErr = $('#mon-error');
+    const monErrT = $('#mon-error-t');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (monErr && monErrT) {
+        monErr.hidden = false;
+        monErrT.textContent = 'Microfone indisponível neste navegador.';
+      }
+      return;
+    }
+
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 1
+        }
+      });
+      const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextRef();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0;
+      src.connect(analyser);
+
+      window.S.running = true;
+      window.S.sim = false;
+      sessionDb = [];
+      histValues = [];
+
+      const consent = $('#consent');
+      const runbar = $('#runbar');
+      const runSim = $('#run-sim');
+      const runTitle = $('#run-title');
+      const runSub = $('#run-sub');
+      const livechip = $('#livechip');
+
+      if (consent) consent.hidden = true;
+      if (runbar) runbar.hidden = false;
+      if (runSim) runSim.hidden = true;
+      if (runTitle) runTitle.textContent = 'Monitorando o microfone';
+      if (runSub) runSub.textContent = 'Sem gravação de áudio';
+      if (monErr) monErr.hidden = true;
+      if (livechip) livechip.classList.add('on');
+      setMonitorNote('Microfone ativo. Registrando medições reais...');
+
+      const timeData = new Float32Array(analyser.fftSize);
+      const freqData = new Uint8Array(analyser.frequencyBinCount);
+      let ticks = 0;
+      smoothedMicDb = null;
+
+      monTimer = setInterval(() => {
+        if (!analyser || !audioCtx) return;
+        ticks += 1;
+        analyser.getFloatTimeDomainData(timeData);
+        analyser.getByteFrequencyData(freqData);
+
+        let mean = 0;
+        for (let i = 0; i < timeData.length; i++) mean += timeData[i];
+        mean /= timeData.length;
+
+        let sumSq = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const centered = timeData[i] - mean;
+          sumSq += centered * centered;
+        }
+        const rms = Math.sqrt(sumSq / timeData.length);
+        const measuredDb = MIC_FULL_SCALE_SPL_DB + 20 * Math.log10(Math.max(rms, 1e-7));
+        smoothedMicDb = smoothedMicDb === null
+          ? measuredDb
+          : smoothedMicDb * 0.55 + measuredDb * 0.45;
+        const estDb = Math.round(Math.max(30, Math.min(120, smoothedMicDb)));
+
+        let maxBin = 1;
+        for (let i = 1; i < freqData.length; i++) {
+          if (freqData[i] > freqData[maxBin]) maxBin = i;
+        }
+        const domFreq = Math.max(20, Math.round((maxBin * audioCtx.sampleRate) / analyser.fftSize));
+
+        updateMeterUI(estDb, domFreq);
+        drawCanvases(estDb, domFreq, false);
+
+        if (ticks === 2 || ticks % 16 === 0) {
+          recordCurrentMeasurement('real');
+        }
+      }, 500);
+    } catch (err) {
+      if (monErr && monErrT) {
+        monErr.hidden = false;
+        monErrT.textContent = `Não foi possível acessar o microfone (${err.message || 'permissão negada'}).`;
+      }
+    }
+  }
+
+  function bindMonitorControls() {
+    $('#btn-start')?.addEventListener('click', startMicrophone);
+    $('#btn-demo')?.addEventListener('click', startSimulation);
+    $('#btn-demo2')?.addEventListener('click', startSimulation);
+    $('#btn-stop')?.addEventListener('click', stopMonitoring);
+    $('#chip-stop')?.addEventListener('click', stopMonitoring);
+    $('#btn-record-now')?.addEventListener('click', () => recordCurrentMeasurement(window.S.sim ? 'demo' : 'real'));
+    $('#btn-record-live')?.addEventListener('click', () => recordCurrentMeasurement(window.S.sim ? 'demo' : 'real'));
+  }
+
+  /* ---------- DASHBOARD (KPIS, GRÁFICOS CHART.JS, TABELA E AÇÕES) ---------- */
+  const chartInstances = {};
+
+  function renderDashboardView() {
+    const all = rebuildUnifiedState();
+    const dPeriod = $('#d-period')?.value || window.S.dashFilter.period || '7d';
+    const dSrc = $('#d-src')?.value || window.S.dashFilter.src || 'all';
+    window.S.dashFilter.period = dPeriod;
+    window.S.dashFilter.src = dSrc;
+
+    const now = Date.now();
+    const maxAge = dPeriod === '24h' ? 24 * 3600 * 1000 : dPeriod === '7d' ? 7 * 24 * 3600 * 1000 : Infinity;
+
+    const filtered = all.filter((r) => {
+      if (dSrc !== 'all' && r.src !== dSrc) return false;
+      if (Number.isFinite(maxAge) && (now - (r.ts || now)) > maxAge) return false;
+      return true;
+    });
+
+    const n = filtered.length;
+    const avg = n ? (filtered.reduce((a, b) => a + Number(b.db || 0), 0) / n) : 0;
+    const maxItem = n ? [...filtered].sort((a, b) => Number(b.db) - Number(a.db))[0] : null;
+    const latest = n ? [...filtered].sort((a, b) => (b.ts || 0) - (a.ts || 0))[0] : null;
+
+    const tNowV = $('#t-now-v');
+    const tNowS = $('#t-now-s');
+    const tNow = $('#t-now');
+    const tAvg = $('#t-avg');
+    const tMax = $('#t-max');
+    const tMaxS = $('#t-max-s');
+    const tN = $('#t-n');
+
+    if (latest) {
+      if (tNowV) tNowV.textContent = String(Math.round(latest.db));
+      if (tNowS) tNowS.textContent = latest.location || 'Última leitura';
+      if (tNow) tNow.dataset.cls = classifyDb(latest.db).key;
+    } else {
+      if (tNowV) tNowV.textContent = '—';
+      if (tNowS) tNowS.textContent = 'sem medições';
+      if (tNow) tNow.dataset.cls = 'idle';
+    }
+
+    if (tAvg) tAvg.textContent = n ? avg.toFixed(1) : '—';
+    if (tMax) tMax.textContent = maxItem ? String(Math.round(maxItem.db)) : '—';
+    if (tMaxS) tMaxS.textContent = maxItem ? (maxItem.location || '') : '';
+    if (tN) tN.textContent = String(n);
+
+    const tbody = $('#tb');
+    const limit = window.S.dashFilter.limit || 15;
+    if (tbody) {
+      const rows = filtered.slice(0, limit);
+      tbody.innerHTML = rows.length
+        ? rows.map((r) => {
+          const c = classifyDb(r.db);
+          return `<tr>
+            <td>${r.time || '—'}</td>
+            <td>${escapeHtml(r.location || '—')}</td>
+            <td><b>${r.db} dB</b></td>
+            <td><span class="badge" data-cls="${c.key}">${c.label}</span></td>
+            <td>${r.freq ? r.freq + ' Hz' : '—'}</td>
+            <td>${r.src === 'real' ? 'Minha medição' : 'Demonstração'}</td>
+          </tr>`;
+        }).join('')
+        : '<tr><td colspan="6">Nenhuma medição encontrada para os filtros selecionados.</td></tr>';
+    }
+
+    const byHour = Array.from({ length: 24 }, () => []);
+    filtered.forEach((r) => {
+      const h = new Date(r.ts || Date.now()).getHours();
+      byHour[h].push(Number(r.db) || 0);
+    });
+    const hourAvgs = byHour.map((arr, h) => ({
+      hour: h,
+      label: `${String(h).padStart(2, '0')}h`,
+      avg: arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null
+    }));
+
+    const hrsEl = $('#hrs');
+    const validHours = hourAvgs.filter((x) => x.avg !== null).sort((a, b) => b.avg - a.avg);
+    if (hrsEl) {
+      hrsEl.innerHTML = validHours.length
+        ? validHours.slice(0, 5).map((x) => `<li><span>${x.label}</span><b>${x.avg.toFixed(1)} dB</b></li>`).join('')
+        : '<li><span>Sem dados suficientes</span><b>—</b></li>';
+    }
+
+    const fcPeak = $('#fc-peak');
+    const fcNow = $('#fc-now');
+    const curH = new Date().getHours();
+    if (fcPeak) {
+      fcPeak.textContent = validHours.length ? `${validHours[0].label} (~${validHours[0].avg.toFixed(0)} dB)` : '—';
+    }
+    if (fcNow) {
+      const curItem = hourAvgs[curH];
+      fcNow.textContent = curItem && curItem.avg !== null ? `~${curItem.avg.toFixed(0)} dB` : (n ? `~${avg.toFixed(0)} dB` : '—');
+    }
+
+    if (typeof Chart !== 'undefined') {
+      const makeOrUpdate = (key, canvasId, config) => {
+        const cv = document.getElementById(canvasId);
+        if (!cv) return;
+        if (chartInstances[key]) chartInstances[key].destroy();
+        chartInstances[key] = new Chart(cv.getContext('2d'), config);
+      };
+
+      makeOrUpdate('hour', 'ch-hour', {
+        type: 'line',
+        data: {
+          labels: hourAvgs.map((x) => x.label),
+          datasets: [{
+            label: 'Média (dB)',
+            data: hourAvgs.map((x) => x.avg !== null ? Number(x.avg.toFixed(1)) : null),
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.2)',
+            spanGaps: true,
+            tension: 0.35
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      const regMap = {};
+      filtered.forEach((r) => {
+        const reg = r.region || 'Geral';
+        if (!regMap[reg]) regMap[reg] = [];
+        regMap[reg].push(Number(r.db) || 0);
+      });
+      const regKeys = Object.keys(regMap);
+      makeOrUpdate('region', 'ch-region', {
+        type: 'bar',
+        data: {
+          labels: regKeys,
+          datasets: [{
+            label: 'Média por região (dB)',
+            data: regKeys.map((k) => Number((regMap[k].reduce((a, b) => a + b, 0) / regMap[k].length).toFixed(1))),
+            backgroundColor: '#7e22ce'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      const dayMap = {};
+      filtered.forEach((r) => {
+        const day = new Date(r.ts || Date.now()).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        if (!dayMap[day]) dayMap[day] = [];
+        dayMap[day].push(Number(r.db) || 0);
+      });
+      const dayKeys = Object.keys(dayMap);
+      makeOrUpdate('day', 'ch-day', {
+        type: 'bar',
+        data: {
+          labels: dayKeys,
+          datasets: [{
+            label: 'Média diária (dB)',
+            data: dayKeys.map((k) => Number((dayMap[k].reduce((a, b) => a + b, 0) / dayMap[k].length).toFixed(1))),
+            backgroundColor: '#9333ea'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      });
+
+      let qCount = 0, mCount = 0, cCount = 0;
+      filtered.forEach((r) => {
+        const k = classifyDb(r.db).key;
+        if (k === 'quiet') qCount += 1;
+        else if (k === 'mod') mCount += 1;
+        else cCount += 1;
+      });
+      makeOrUpdate('cls', 'ch-cls', {
+        type: 'doughnut',
+        data: {
+          labels: ['Tranquilo', 'Moderado', 'Crítico'],
+          datasets: [{
+            data: [qCount, mCount, cCount],
+            backgroundColor: ['#22c55e', '#eab308', '#ef4444'],
+            borderWidth: 0
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+  }
+
+  function bindDashboardControls() {
+    $('#d-period')?.addEventListener('change', renderDashboardView);
+    $('#d-src')?.addEventListener('change', renderDashboardView);
+    $('#btn-more')?.addEventListener('click', () => {
+      window.S.dashFilter.limit = (window.S.dashFilter.limit || 15) + 15;
+      renderDashboardView();
+    });
+    $('#btn-clear')?.addEventListener('click', () => {
+      window.RuidometroStore.clearRealMeasurements();
+      savedCount = 0;
+      const stSaved = $('#st-saved');
+      if (stSaved) stSaved.textContent = '0';
+      const note = $('#store-note');
+      if (note) note.textContent = 'Suas medições reais salvas localmente foram removidas.';
+    });
+  }
+
+  /* ---------- ROTEAMENTO E INTEGRAÇÃO CONTÍNUA ---------- */
+  const ROUTES = ['inicio', 'monitor', 'mapa', 'dashboard'];
+
+  window.onMapShow = function onMapShow(focusPoint) {
+    updateMapView({ fit: false, focusPoint: focusPoint || null });
+    setTimeout(() => {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 150);
+  };
+
+  function handleRoute() {
+    let r = (location.hash || '').replace('#', '');
+    if (ROUTES.indexOf(r) < 0) r = 'inicio';
+    window.S.route = r;
+
+    ROUTES.forEach((n) => {
+      const sec = document.getElementById('page-' + n);
+      if (sec) sec.hidden = n !== r;
+    });
+
+    $$('[data-route]').forEach((a) => {
+      a.classList.toggle('on', a.dataset.route === r);
+    });
+
+    window.scrollTo(0, 0);
+
+    if (r === 'mapa') {
+      window.onMapShow();
+    } else if (r === 'dashboard') {
+      renderDashboardView();
+    } else if (r === 'monitor') {
+      drawCanvases(40, 120, false);
+    }
+  }
+
+  window.RuidometroMap = {
+    init: initLeafletMap,
+    render: () => updateMapView({ fit: false }),
+    focus: (pt) => updateMapView({ fit: false, focusPoint: pt })
+  };
+
+  window.addEventListener('hashchange', handleRoute);
+  window.addEventListener('resize', () => {
+    if (window.S.route === 'mapa' && leafletMap) {
+      leafletMap.invalidateSize();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    rebuildUnifiedState();
+    bindMapControls();
+    bindMonitorControls();
+    bindDashboardControls();
+
+    // Atualiza o mapa, rankings e Dashboard sempre que uma nova medição entra
+    window.RuidometroStore.subscribe((_all, addedRecord) => {
+      const hasGeo = addedRecord && typeof addedRecord.lat === 'number' && typeof addedRecord.lng === 'number';
+      updateMapView({ fit: false, focusPoint: hasGeo ? addedRecord : null });
+      renderDashboardView();
+    });
+
+    handleRoute();
+    fixOldLocations();
+  });
+})();
+</script>
+
+</body>
+</html>

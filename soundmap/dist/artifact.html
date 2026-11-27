@@ -1,0 +1,1877 @@
+<title>SoundMap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: none;
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: none;
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: none;
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+
+/* Layout: barra superior + quatro páginas por hash (inicio, monitor, mapa, dashboard); painel de instrumentos escuro, cartões só onde há instrumento. */
+:root{
+  --bg:#040a18;--bg2:#081330;--panel:#0b1a3a;--panel2:#10224f;--line:rgba(120,160,255,.18);
+  --fg:#e9f1ff;--muted:#94a8cc;--blue:#2f6bff;--cyan:#22d3ee;
+  --quiet:#22c55e;--mod:#facc15;--crit:#ef4444;
+  --f-display:'Space Grotesk',system-ui,sans-serif;--f-body:'Inter',system-ui,sans-serif;--f-mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0;
+  background:radial-gradient(900px 520px at 88% -8%,rgba(47,107,255,.20),transparent 62%),radial-gradient(700px 420px at -5% 8%,rgba(34,211,238,.09),transparent 60%),var(--bg);
+  background-color:var(--bg);color:var(--fg);font:15px/1.55 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 40px;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:3000}
+h1,h2,h3{font-family:var(--f-display);margin:0;line-height:1.1;text-wrap:balance}
+p{margin:0}
+button{font-family:inherit}
+.muted{color:var(--muted)}
+.wrap{max-width:1180px;margin-inline:auto}
+.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* cabeçalho */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:2000;background:rgba(4,10,24,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:14px;padding-block:10px;min-height:58px}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px var(--f-display);letter-spacing:.02em;color:var(--fg);text-decoration:none}
+.brand b{color:var(--cyan);font-weight:700}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:grid;place-items:center;color:#031023}
+.nav{display:flex;gap:4px;margin-left:auto}
+.nav a{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;color:var(--muted);text-decoration:none;font-weight:500;font-size:14px}
+.nav a:hover{color:var(--fg)}
+.nav a.on{color:var(--fg);background:rgba(47,107,255,.2);box-shadow:inset 0 0 0 1px rgba(47,107,255,.55)}
+.livechip{display:none;align-items:center;gap:8px;padding:4px 5px 4px 12px;border-radius:999px;border:1px solid color-mix(in srgb,var(--crit) 55%,transparent);background:color-mix(in srgb,var(--crit) 12%,transparent);font-size:13px;font-weight:600;margin-left:auto}
+.livechip.on{display:flex}
+.livechip.on+.nav{margin-left:0}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--crit);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.tabbar{display:none}
+@media (max-width:760px){
+  .nav{display:none}
+  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2500;background:rgba(6,14,34,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+    padding:6px max(16px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));gap:4px}
+  .tabbar a{flex:1;display:grid;justify-items:center;gap:2px;padding:6px 0;border-radius:10px;color:var(--muted);text-decoration:none;font-size:11.5px;font-weight:500}
+  .tabbar a.on{color:var(--cyan);background:rgba(47,107,255,.16)}
+  body{padding-block:0 84px}
+}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--fg);font:600 15px var(--f-body);cursor:pointer;text-decoration:none;transition:transform .15s,background .15s,box-shadow .15s}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn.primary{background:linear-gradient(135deg,#2f6bff,#1f8fff 60%,#22d3ee);border-color:transparent;color:#fff;box-shadow:0 8px 30px -8px rgba(47,107,255,.8)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 12px 34px -8px rgba(34,211,238,.7)}
+.btn.stop{background:color-mix(in srgb,var(--crit) 18%,transparent);border-color:color-mix(in srgb,var(--crit) 55%,transparent)}
+.btn.sm{min-height:32px;padding:0 12px;font-size:13px;border-radius:999px}
+
+/* páginas */
+.page{padding-block:28px 24px}
+.page-head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 24px;margin-bottom:20px}
+.page-head h2{font-size:clamp(26px,4vw,36px)}
+.page-head p{max-width:62ch;color:var(--muted)}
+.eyebrow{font:500 12px var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+
+/* início */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:32px;align-items:center;padding-block:20px 8px}
+.wordmark{font-size:clamp(52px,10vw,104px);letter-spacing:-.02em;margin:10px 0 14px;font-weight:700}
+.wordmark span{background:linear-gradient(90deg,var(--blue),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(16px,2vw,19px);color:#c4d3ef;max-width:52ch}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+.fine{font-size:13px;color:var(--muted);margin-top:14px;max-width:52ch}
+.hero-vis{position:relative;height:340px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(16,34,79,.55),rgba(8,19,48,.4));overflow:hidden}
+.hero-vis canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero-key{position:absolute;left:14px;right:14px;bottom:14px;display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:860px){.hero{grid-template-columns:minmax(0,1fr)}.hero-vis{height:240px}}
+.strip{display:flex;flex-wrap:wrap;gap:6px 28px;padding:16px 0;border-block:1px solid var(--line);margin-block:22px 0;color:var(--muted);font-size:14px}
+.strip b{color:var(--fg);font-family:var(--f-mono);font-weight:500}
+.sec{margin-top:44px}
+.sec>h2{font-size:clamp(22px,3vw,28px);margin-bottom:6px}
+.sec>.sub{color:var(--muted);margin-bottom:20px;max-width:64ch}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:0 24px;counter-reset:s}
+.step{padding:14px 0 18px;border-top:2px solid var(--line)}
+.step::before{counter-increment:s;content:"Etapa " counter(s);font:500 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.step h3{font-size:18px;margin:6px 0}
+.step p{color:var(--muted);font-size:14px}
+.concepts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:14px}
+.concept{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(11,26,58,.6);min-width:0}
+.concept h3{font-size:16px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.concept h3 small{font:500 11px var(--f-mono);color:var(--cyan);letter-spacing:.06em}
+.concept p{font-size:13.5px;color:var(--muted);margin-top:6px}
+.concept .lv{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font:500 12.5px/1.55 var(--f-mono);color:var(--fg);overflow-wrap:anywhere}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:24px}
+.two-col h3{font-size:18px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.two-col h3 .ic{color:var(--cyan)}
+.two-col p{color:var(--muted);font-size:14.5px}
+
+/* cartões e componentes */
+.card{background:linear-gradient(180deg,rgba(13,28,62,.92),rgba(8,19,46,.92));border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}
+.card>h3,.cardh{font:500 12px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font:600 13px var(--f-body);color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);white-space:nowrap}
+.badge::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c)}
+.badge.lg{font-size:16px;padding:7px 16px}
+.badge.key{background:rgba(4,10,24,.7);font-size:12px;padding:3px 10px}
+.alert{padding:12px 16px;border-radius:12px;border:1px solid color-mix(in srgb,var(--mod) 55%,transparent);background:color-mix(in srgb,var(--mod) 10%,transparent);margin-bottom:16px;font-size:14px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+
+/* monitoramento */
+.consent{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;margin-bottom:16px;border-color:rgba(47,107,255,.5)}
+.consent h3{font:700 20px var(--f-display);letter-spacing:0;text-transform:none;color:var(--fg);margin-bottom:4px}
+.consent ul{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.consent li{display:flex;gap:10px;color:#c4d3ef;font-size:14px}
+.consent li .ic{color:var(--cyan);margin-top:2px}
+.opts{display:grid;gap:14px;align-content:start}
+.opt{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.opt input{margin-top:3px;width:18px;height:18px;accent-color:var(--blue);flex:none}
+.opt small{display:block;color:var(--muted);font-size:12.5px}
+.opts .btns{display:grid;gap:10px;margin-top:4px}
+@media (max-width:900px){.consent{grid-template-columns:minmax(0,1fr)}}
+.runbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:16px;padding:12px 16px}
+.runbar .st{display:flex;align-items:center;gap:10px;font-size:14px}
+.runbar .st small{display:block;color:var(--muted);font-size:12.5px}
+.tag{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted)}
+.tag.sim{color:var(--mod);border-color:color-mix(in srgb,var(--mod) 50%,transparent)}
+.mon-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+.meter{box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent),0 20px 60px -30px var(--c)}
+.meter .big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big .num{font:700 clamp(64px,13vw,116px)/1 var(--f-display);color:var(--c);font-variant-numeric:tabular-nums;letter-spacing:-.03em;transition:color .3s}
+.big .unit{font:600 24px var(--f-display);color:var(--muted)}
+.meter .row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:6px}
+.scale{position:relative;height:14px;border-radius:99px;margin:26px 0 8px;background:linear-gradient(90deg,var(--quiet) 0 31.25%,var(--mod) 31.25% 50%,var(--crit) 50% 100%)}
+.scale i{position:absolute;top:-6px;width:4px;height:26px;border-radius:3px;background:#fff;box-shadow:0 0 12px #fff;left:0;transform:translateX(-50%);transition:left .15s linear}
+.ticks{position:relative;height:18px;font:500 11px var(--f-mono);color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}
+.ticks span:last-child{transform:translateX(-100%)}
+.refs{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.cls-msg{margin-top:12px;color:#c4d3ef;font-size:14px;min-height:42px}
+.mini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mini>div{padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);min-width:0}
+.mini small{display:block;font:500 11px var(--f-mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.mini b{font:700 26px var(--f-display);font-variant-numeric:tabular-nums}
+.mini b em{font:500 13px var(--f-body);font-style:normal;color:var(--muted);margin-left:4px}
+.cv{display:block;width:100%;border-radius:10px;background:rgba(2,8,22,.6)}
+#cv-wave{height:190px}#cv-spec{height:250px}#cv-hist{height:150px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+@media (max-width:900px){.mon-grid,.two{grid-template-columns:minmax(0,1fr)}}
+.capt{font-size:12.5px;color:var(--muted);margin-top:8px}
+.mon-concepts{margin-top:28px}
+.mon-concepts>h3{font-size:22px;margin-bottom:12px}
+
+/* mapa */
+.toolbar{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;margin-bottom:14px}
+.fgroup{display:grid;gap:6px}
+.fgroup>span{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font:500 13px var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.chip:hover{color:var(--fg)}
+.chip[aria-pressed=true]{color:var(--fg);border-color:rgba(47,107,255,.75);background:rgba(47,107,255,.2)}
+.chip[data-cls][aria-pressed=true]{border-color:color-mix(in srgb,var(--c) 65%,transparent);background:color-mix(in srgb,var(--c) 16%,transparent)}
+.chip .d{width:8px;height:8px;border-radius:50%;background:var(--c)}
+select{min-height:34px;border-radius:9px;background:var(--panel);color:var(--fg);border:1px solid var(--line);padding:0 10px;font:500 13px var(--f-body)}
+.map-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+@media (max-width:980px){.map-wrap{grid-template-columns:minmax(0,1fr)}}
+.map-box{position:relative;isolation:isolate;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+#map{height:min(66vh,620px);min-height:380px;background:var(--bg2)}
+.note{position:absolute;left:12px;right:12px;top:12px;z-index:900;padding:10px 14px;border-radius:10px;background:rgba(4,10,24,.92);border:1px solid color-mix(in srgb,var(--mod) 50%,transparent);font-size:13px;color:#e6edff}
+.legend{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;padding:12px 4px 0;font-size:12.5px;color:var(--muted)}
+.ramp{display:inline-block;vertical-align:middle;width:160px;height:10px;border-radius:99px;background:linear-gradient(90deg,rgb(34,197,94),rgb(250,204,21) 37.5%,rgb(239,68,68) 75%,rgb(239,68,68))}
+.rank{display:grid;gap:14px}
+.rank h3{font:500 12px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.rl{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.rl button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--fg);cursor:pointer;font:500 14px var(--f-body)}
+.rl button:hover{background:rgba(255,255,255,.08)}
+.rl .v{font:700 15px var(--f-mono);color:var(--c)}
+.rl small{grid-column:1/-1;color:var(--muted);font-size:12px}
+.rgn span{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;font:700 13px var(--f-display);color:#04101f;background:var(--c);box-shadow:0 0 0 3px rgba(4,10,24,.75),0 0 22px var(--c)}
+.leaflet-container{background:var(--bg2);font:13px var(--f-body)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel2);color:var(--fg);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.leaflet-container a{color:var(--cyan)}
+.leaflet-bar a{background:var(--panel2);color:var(--fg);border-color:var(--line)}
+.leaflet-bar a:hover{background:var(--panel)}
+.leaflet-container .leaflet-control-attribution{background:rgba(4,10,24,.75);color:var(--muted)}
+.leaflet-container .leaflet-control-attribution a{color:var(--muted)}
+.pop strong{display:block;margin-bottom:2px}
+.sm-heat{position:absolute;left:0;top:0;pointer-events:none}
+
+/* dashboard */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:12px;margin-bottom:16px}
+.tile{padding:16px 18px;border-radius:14px;border:1px solid var(--line);background:rgba(11,26,58,.7);min-width:0}
+.tile small{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tile b{display:block;font:700 38px/1.1 var(--f-display);margin:6px 0 2px;font-variant-numeric:tabular-nums;color:var(--c,var(--fg))}
+.tile b em{font:500 15px var(--f-body);font-style:normal;color:var(--muted);margin-left:4px}
+.tile .s2{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;margin-bottom:16px}
+.chart{position:relative;height:270px}
+.hrs{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.hrs li{display:grid;grid-template-columns:76px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:14px}
+.hrs .bar{height:10px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.hrs .bar i{display:block;height:100%;border-radius:99px;background:var(--c)}
+.hrs .v{font:600 13px var(--f-mono);text-align:right}
+.fc{display:grid;gap:12px}
+.fc .big2{font:700 34px/1.1 var(--f-display)}
+.fc .big2 em{font:500 15px var(--f-body);font-style:normal;color:var(--muted)}
+.fc p{font-size:13.5px;color:var(--muted)}
+.tw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+.tbl th{font:500 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:9px 10px;border-bottom:1px solid rgba(120,160,255,.08);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl td.num{font-family:var(--f-mono);font-weight:500}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.foot{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);max-width:80ch}
+
+[data-cls=quiet]{--c:var(--quiet)}
+[data-cls=mod]{--c:var(--mod)}
+[data-cls=crit]{--c:var(--crit)}
+[data-cls=idle]{--c:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h1M7 8v8M11 3v18M15 7v10M19 10v4M22 12h-1"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9M12 18l4-7"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio" aria-label="SoundMap, página inicial"><span class="logo"><svg class="ic"><use href="#i-wave"/></svg></span><span>SOUND<b>Map</b></span></a>
+    <div class="livechip" id="livechip"><span class="dot-live"></span><span>Ao vivo</span><button class="btn sm stop" id="chip-stop" type="button"><svg class="ic"><use href="#i-stop"/></svg>Parar</button></div>
+    <nav class="nav" aria-label="Principal">
+      <a href="#inicio" data-route="inicio"><svg class="ic"><use href="#i-home"/></svg>Início</a>
+      <a href="#monitor" data-route="monitor"><svg class="ic"><use href="#i-mic"/></svg>Monitoramento</a>
+      <a href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-pin"/></svg>Mapa</a>
+      <a href="#dashboard" data-route="dashboard"><svg class="ic"><use href="#i-chart"/></svg>Dashboard</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============ INÍCIO ============ -->
+<section id="page-inicio" class="page">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Física 2 · Processamento de sinais · Geolocalização</p>
+      <h1 class="wordmark">SOUND<span>Map</span></h1>
+      <p class="lead">O mapa inteligente de poluição sonora. Use o microfone do celular ou do computador para medir o ruído do ambiente, ver a onda e o espectro do som e descobrir quais regiões da cidade são mais barulhentas.</p>
+      <div class="cta">
+        <a class="btn primary" href="#monitor"><svg class="ic"><use href="#i-mic"/></svg>Iniciar monitoramento</a>
+        <a class="btn" href="#mapa"><svg class="ic"><use href="#i-pin"/></svg>Ver mapa de demonstração</a>
+      </div>
+      <p class="fine">O áudio nunca é gravado nem enviado. Só números ficam salvos no seu navegador, e o monitoramento só começa depois da sua autorização.</p>
+    </div>
+    <div class="hero-vis" aria-hidden="true">
+      <canvas id="cv-hero"></canvas>
+      <div class="hero-key">
+        <span class="badge key" data-cls="quiet">Tranquilo · até de 55 dB</span>
+        <span class="badge key" data-cls="mod">Moderado · 55 a 70 dB</span>
+        <span class="badge key" data-cls="crit">Crítico · acima de 70 dB</span>
+      </div>
+    </div>
+  </div>
+  <div class="strip" id="home-strip"></div>
+
+  <div class="sec">
+    <h2>Como funciona</h2>
+    <p class="sub">Do som no ar até o ponto no mapa, em quatro etapas.</p>
+    <div class="steps">
+      <div class="step"><h3>Captar</h3><p>O navegador pede permissão e abre o microfone pela Web Audio API. O som é lido em tempo real, sem gravação.</p></div>
+      <div class="step"><h3>Analisar</h3><p>A pressão sonora eficaz vira decibéis. A FFT separa o sinal em frequências e revela o tom dominante.</p></div>
+      <div class="step"><h3>Classificar</h3><p>O ambiente é rotulado como tranquilo, moderado ou crítico, com cor e indicador na hora.</p></div>
+      <div class="step"><h3>Mapear</h3><p>Com sua autorização, a posição é salva junto com o nível. O mapa mostra marcadores e mapa de calor por região e horário.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>A física por trás das medidas</h2>
+    <p class="sub">Cada conceito aparece ao vivo na página de monitoramento, ligado ao som que o microfone capta.</p>
+    <div class="concepts">
+      <div class="concept"><h3>Ondas sonoras <small>p(t)</small></h3><p>Som é uma variação de pressão do ar que se propaga como onda longitudinal. A velocidade no ar é de cerca de 343 m/s.</p></div>
+      <div class="concept"><h3>Frequência <small>Hz</small></h3><p>Número de oscilações por segundo. Define se o som é grave ou agudo. A audição humana vai de 20 Hz a 20 kHz.</p></div>
+      <div class="concept"><h3>Amplitude <small>Pa</small></h3><p>Tamanho da variação de pressão. Dobrar a amplitude soma 6 dB ao nível sonoro.</p></div>
+      <div class="concept"><h3>Intensidade sonora <small>W/m²</small></h3><p>Potência que atravessa uma área. É proporcional ao quadrado da amplitude de pressão.</p></div>
+      <div class="concept"><h3>Escala de decibéis <small>dB</small></h3><p>Escala logarítmica: L = 10·log₁₀(I/I₀), com I₀ = 10⁻¹² W/m². Cada +10 dB multiplica a intensidade por 10.</p></div>
+      <div class="concept"><h3>Espectro de frequência <small>FFT</small></h3><p>A Transformada Rápida de Fourier decompõe o som em senoides. Cada barra mostra quanta energia existe em uma faixa de frequência.</p></div>
+    </div>
+  </div>
+
+  <div class="sec two-col">
+    <div><h3><svg class="ic"><use href="#i-shield"/></svg>Privacidade em primeiro lugar</h3><p>Nenhuma gravação é feita. O áudio é analisado no seu aparelho e descartado. O que fica guardado é só data, horário, nível em dB, frequência dominante e, se você permitir, a localização. Você pode interromper o monitoramento a qualquer momento.</p></div>
+    <div><h3><svg class="ic"><use href="#i-info"/></svg>Valores são estimativas</h3><p>Microfones de celulares e notebooks têm sensibilidades diferentes e aplicam filtros próprios. Os níveis medidos são estimativas e não substituem uma medição técnica.</p></div>
+  </div>
+</section>
+
+<!-- ============ MONITORAMENTO ============ -->
+<section id="page-monitor" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Tempo real</p><h2>Monitoramento</h2></div>
+    <p>Nível sonoro estimado, forma de onda, espectro de frequência e classificação do ambiente.</p>
+  </div>
+
+  <div class="card consent" id="consent">
+    <div>
+      <h3>Antes de começar</h3>
+      <ul>
+        <li><svg class="ic"><use href="#i-mic"/></svg><span>O navegador vai pedir permissão para usar o microfone. Nada começa antes do seu "Permitir".</span></li>
+        <li><svg class="ic"><use href="#i-shield"/></svg><span>O áudio é analisado ao vivo e descartado. Não há gravação, armazenamento nem envio de som.</span></li>
+        <li><svg class="ic"><use href="#i-db"/></svg><span>Ficam salvos só números neste navegador: data, horário, nível em dB, frequência dominante e, se permitido, a posição.</span></li>
+        <li><svg class="ic"><use href="#i-info"/></svg><span>Os valores são estimativas e podem diferir do nível real conforme o aparelho e o ambiente.</span></li>
+      </ul>
+    </div>
+    <div class="opts">
+      <label class="opt"><input type="checkbox" id="opt-save" checked><span>Salvar medições<small>Uma medição a cada 10 s, calculada como nível equivalente (Leq).</small></span></label>
+      <label class="opt"><input type="checkbox" id="opt-geo" checked><span>Usar minha localização<small>O navegador pedirá permissão. Sem posição, a medição é salva mas não aparece no mapa.</small></span></label>
+      <div class="btns">
+        <button class="btn primary" id="btn-start" type="button"><svg class="ic"><use href="#i-mic"/></svg>Autorizar microfone e iniciar</button>
+        <button class="btn" id="btn-demo" type="button">Testar com som simulado</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert" id="mon-error" role="alert" hidden><span id="mon-error-t"></span><button class="btn sm" id="btn-demo2" type="button">Usar som simulado</button></div>
+
+  <div class="card runbar" id="runbar" hidden>
+    <div class="st"><span class="dot-live"></span><div><span id="run-title">Monitorando o microfone</span> <span class="tag sim" id="run-sim" hidden>Simulação</span><small id="run-sub"></small></div></div>
+    <button class="btn stop" id="btn-stop" type="button"><svg class="ic"><use href="#i-stop"/></svg>Interromper monitoramento</button>
+  </div>
+
+  <div class="mon-grid">
+    <div class="card meter" id="meter" data-cls="idle">
+      <h3>Nível sonoro estimado</h3>
+      <div class="big"><span class="num" id="db-num">—</span><span class="unit">dB</span></div>
+      <div class="row"><span class="badge lg" id="cls-badge" data-cls="idle"><span id="cls-t">Aguardando</span></span></div>
+      <div class="scale" aria-hidden="true"><i id="scale-marker"></i></div>
+      <div class="ticks" aria-hidden="true"><span style="left:0">30</span><span style="left:31.25%">55</span><span style="left:50%">70</span><span style="left:100%">110</span></div>
+      <p class="cls-msg" id="cls-msg">Inicie o monitoramento para ver o nível do ambiente.</p>
+      <p class="refs"><span>30 dB sussurro</span><span>60 dB conversa</span><span>85 dB tráfego pesado</span><span>110 dB show</span></p>
+    </div>
+    <div class="card">
+      <h3>Sessão atual</h3>
+      <div class="mini">
+        <div><small>Média</small><b id="st-avg">—<em>dB</em></b></div>
+        <div><small>Pico</small><b id="st-max">—<em>dB</em></b></div>
+        <div><small>Frequência dominante</small><b id="st-freq">—<em>Hz</em></b></div>
+        <div><small>Medições salvas</small><b id="st-saved">0</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card"><h3>Forma de onda</h3><canvas class="cv" id="cv-wave" aria-label="Gráfico da onda sonora em tempo real"></canvas><p class="capt">Pressão do ar ao longo de cerca de 30 ms. Escala automática.</p></div>
+    <div class="card"><h3>Espectro de frequência (FFT)</h3><canvas class="cv" id="cv-spec" aria-label="Espectro de frequência em tempo real"></canvas><p class="capt">Eixo de frequência em escala logarítmica, de 20 Hz a 20 kHz.</p></div>
+  </div>
+  <div class="card" style="margin-top:16px"><h3>Últimos 60 segundos</h3><canvas class="cv" id="cv-hist" aria-label="Histórico recente do nível sonoro"></canvas><p class="capt">Faixas verde, amarela e vermelha correspondem a tranquilo, moderado e crítico.</p></div>
+
+  <div class="mon-concepts">
+    <h3>Física ao vivo</h3>
+    <div class="concepts">
+      <div class="concept"><h3>Ondas sonoras <small>T e λ</small></h3><p>O gráfico de onda mostra a variação de pressão. O período é T = 1/f e o comprimento de onda é λ = v/f.</p><div class="lv" id="k-wave">—</div></div>
+      <div class="concept"><h3>Frequência <small>Hz</small></h3><p>É a frequência com mais energia no espectro. Sons graves ficam abaixo de 250 Hz e agudos acima de 2 kHz.</p><div class="lv" id="k-freq">—</div></div>
+      <div class="concept"><h3>Amplitude <small>Pa</small></h3><p>Pressão sonora eficaz estimada a partir do nível: p = p₀·10^(L/20), com p₀ = 20 µPa.</p><div class="lv" id="k-amp">—</div></div>
+      <div class="concept"><h3>Intensidade sonora <small>W/m²</small></h3><p>Potência por área: I = I₀·10^(L/10), com I₀ = 10⁻¹² W/m². Varia com o quadrado da amplitude.</p><div class="lv" id="k-int">—</div></div>
+      <div class="concept"><h3>Escala de decibéis <small>dB</small></h3><p>L = 10·log₁₀(I/I₀). A escala é logarítmica porque o ouvido percebe razões, não diferenças absolutas.</p><div class="lv" id="k-db">—</div></div>
+      <div class="concept"><h3>Espectro <small>FFT</small></h3><p>A FFT transforma amostras no tempo em energia por frequência. Mais amostras dão mais resolução.</p><div class="lv" id="k-spec">—</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAPA ============ -->
+<section id="page-mapa" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Geolocalização</p><h2>Mapa de poluição sonora</h2></div>
+    <p>Marcadores coloridos por nível e mapa de calor por interpolação. Os pontos de demonstração ficam em regiões fictícias.</p>
+  </div>
+  <div class="toolbar">
+    <div class="fgroup"><span>Camadas</span>
+      <div class="chips" id="f-layer">
+        <button class="chip" type="button" data-layer="markers" aria-pressed="false">Marcadores</button>
+        <button class="chip" type="button" data-layer="heat" aria-pressed="false">Mapa de calor</button>
+        <button class="chip" type="button" data-layer="both" aria-pressed="true">Ambos</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Intensidade</span>
+      <div class="chips" id="f-cls">
+        <button class="chip" type="button" data-cls="quiet" aria-pressed="true"><i class="d"></i>Tranquilo</button>
+        <button class="chip" type="button" data-cls="mod" aria-pressed="true"><i class="d"></i>Moderado</button>
+        <button class="chip" type="button" data-cls="crit" aria-pressed="true"><i class="d"></i>Crítico</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Horário do dia</span>
+      <div class="chips" id="f-slot">
+        <button class="chip" type="button" data-slot="all" aria-pressed="true">Todos</button>
+        <button class="chip" type="button" data-slot="madrugada" aria-pressed="false">Madrugada</button>
+        <button class="chip" type="button" data-slot="manha" aria-pressed="false">Manhã</button>
+        <button class="chip" type="button" data-slot="tarde" aria-pressed="false">Tarde</button>
+        <button class="chip" type="button" data-slot="noite" aria-pressed="false">Noite</button>
+      </div>
+    </div>
+    <div class="fgroup"><span>Período</span>
+      <select id="f-period" aria-label="Período"><option value="all">Tudo</option><option value="7d">Últimos 7 dias</option><option value="24h">Últimas 24 h</option></select>
+    </div>
+  </div>
+  <div class="map-wrap">
+    <div>
+      <div class="map-box">
+        <div id="map" role="application" aria-label="Mapa interativo de poluição sonora"></div>
+        <div class="note" id="tile-note" hidden>O mapa-base não carregou neste ambiente. Marcadores e mapa de calor continuam funcionando.</div>
+        <div class="note" id="map-fallback" hidden>A biblioteca de mapas não carregou. Confira a conexão e recarregue. Os rankings ao lado continuam disponíveis.</div>
+      </div>
+      <div class="legend">
+        <span>Nível: <span class="ramp"></span> 40 a 80 dB</span>
+        <span class="badge key" data-cls="quiet">Tranquilo</span><span class="badge key" data-cls="mod">Moderado</span><span class="badge key" data-cls="crit">Crítico</span>
+        <span id="map-count"></span>
+      </div>
+    </div>
+    <aside class="rank card" id="rank">
+      <div><h3>Mais barulhentas</h3><ul class="rl" id="rk-loud"></ul></div>
+      <div><h3>Mais silenciosas</h3><ul class="rl" id="rk-quiet"></ul></div>
+      <div class="actions" style="margin-top:0"><button class="btn sm" id="btn-fit" type="button">Centralizar dados</button><button class="btn sm" id="btn-me" type="button"><svg class="ic"><use href="#i-pin"/></svg>Minha posição</button></div>
+      <p class="capt" id="me-note" hidden></p>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<section id="page-dashboard" class="page" hidden>
+  <div class="page-head">
+    <div><p class="eyebrow">Análise de dados</p><h2>Dashboard</h2></div>
+    <div class="toolbar" style="margin:0">
+      <div class="fgroup"><span>Período</span><select id="d-period" aria-label="Período"><option value="all">Tudo</option><option value="7d" selected>Últimos 7 dias</option><option value="24h">Últimas 24 h</option></select></div>
+      <div class="fgroup"><span>Origem</span><select id="d-src" aria-label="Origem dos dados"><option value="all" selected>Todas</option><option value="real">Minhas medições</option><option value="demo">Demonstração</option></select></div>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles">
+    <div class="tile" id="t-now" data-cls="idle"><small id="t-now-l">Nível atual</small><b><span id="t-now-v">—</span><em>dB</em></b><div class="s2" id="t-now-s">sem medições</div></div>
+    <div class="tile"><small>Média</small><b><span id="t-avg">—</span><em>dB</em></b><div class="s2" id="t-avg-s"></div></div>
+    <div class="tile" id="t-max-c"><small>Maior nível</small><b><span id="t-max">—</span><em>dB</em></b><div class="s2" id="t-max-s"></div></div>
+    <div class="tile"><small>Medições</small><b><span id="t-n">0</span></b><div class="s2" id="t-n-s"></div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Intensidade sonora por horário</h3><div class="chart"><canvas id="ch-hour"></canvas></div></div>
+    <div class="card"><h3>Comparação entre regiões</h3><div class="chart"><canvas id="ch-region"></canvas></div></div>
+    <div class="card"><h3>Média diária</h3><div class="chart"><canvas id="ch-day"></canvas></div></div>
+    <div class="card"><h3>Distribuição por classe</h3><div class="chart"><canvas id="ch-cls"></canvas></div></div>
+    <div class="card"><h3>Horários mais barulhentos</h3><ul class="hrs" id="hrs"></ul></div>
+    <div class="card"><h3>Padrões e previsão</h3>
+      <div class="fc">
+        <div><small class="muted">Pico esperado</small><div class="big2" id="fc-peak">—</div></div>
+        <div><small class="muted">Nível esperado agora</small><div class="big2" id="fc-now">—</div></div>
+        <p>Previsão simples, feita com a média por hora do dia. Os dados já guardam data, horário, nível, frequência e posição, a base para um modelo de IA que reconheça padrões de ruído e antecipe os horários de maior poluição sonora.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Histórico de medições</h3>
+    <div class="tw"><table class="tbl"><thead><tr><th>Data e hora</th><th>Local</th><th>Nível</th><th>Classe</th><th>Frequência</th><th>Origem</th></tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="actions">
+      <button class="btn sm" id="btn-more" type="button">Ver mais</button>
+      <button class="btn sm" id="btn-regen" type="button">Gerar novos dados de demonstração</button>
+      <button class="btn sm stop" id="btn-clear" type="button">Apagar minhas medições</button>
+    </div>
+    <p class="capt" id="store-note"></p>
+  </div>
+</section>
+
+<p class="foot">Os valores medidos pelo microfone são estimativas e dependem do aparelho. Dados de demonstração usam regiões fictícias e são gerados no seu navegador.</p>
+</main>
+
+<nav class="tabbar" aria-label="Principal">
+  <a href="#inicio" data-route="inicio"><svg class="ic"><use href="#i-home"/></svg>Início</a>
+  <a href="#monitor" data-route="monitor"><svg class="ic"><use href="#i-mic"/></svg>Monitor</a>
+  <a href="#mapa" data-route="mapa"><svg class="ic"><use href="#i-pin"/></svg>Mapa</a>
+  <a href="#dashboard" data-route="dashboard"><svg class="ic"><use href="#i-chart"/></svg>Dashboard</a>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+'use strict';
+/* ---------- utilidades ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+const nfm=d=>new Intl.NumberFormat('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const F0=nfm(0),F1=nfm(1),F2=nfm(2);
+const n0=v=>F0.format(v),n1=v=>F1.format(v),n2=v=>F2.format(v);
+const SUP={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+const sup=n=>String(n).split('').map(c=>SUP[c]||c).join('');
+const sci=x=>{if(!isFinite(x)||x<=0)return '—';const e=Math.floor(Math.log10(x));return n1(x/Math.pow(10,e))+' × 10'+sup(e);};
+const setT=(el,t)=>{if(el&&el.textContent!==t)el.textContent=t;};
+const fmtDate=ts=>new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const hourOf=ts=>new Date(ts).getHours();
+
+/* ---------- canvas ---------- */
+function fit(c){const r=c.getBoundingClientRect();const dpr=Math.min(2,window.devicePixelRatio||1);
+  const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return dpr;}
+function ctx2(c){try{return c.getContext('2d');}catch(e){return null;}}
+
+/* ---------- física ---------- */
+const P0=20e-6,I0=1e-12,VSOM=343;
+const pRms=db=>P0*Math.pow(10,db/20);
+const inten=db=>I0*Math.pow(10,db/10);
+const fmtP=p=>p>=1?n2(p)+' Pa':p>=1e-3?n1(p*1e3)+' mPa':n1(p*1e6)+' µPa';
+const NOTES=['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
+const noteOf=f=>{if(!f||f<40||f>4200)return null;const m=Math.round(12*Math.log2(f/440)+69);return NOTES[((m%12)+12)%12]+(Math.floor(m/12)-1);};
+const bandOf=f=>f<250?'grave':f<=2000?'médio':'agudo';
+
+/* ---------- classificação ---------- */
+const T={quiet:55,crit:70};
+const COL={quiet:css('--quiet'),mod:css('--mod'),crit:css('--crit'),cyan:css('--cyan'),blue:css('--blue'),muted:css('--muted'),fg:css('--fg'),mono:css('--f-mono')||'monospace'};
+const CLS={
+  quiet:{label:'Tranquilo',msg:'Ambiente tranquilo, adequado para descanso e concentração.'},
+  mod:{label:'Moderado',msg:'Ruído moderado, típico de conversas e tráfego leve. Exposição longa pode incomodar.'},
+  crit:{label:'Crítico',msg:'Ruído alto. Exposição prolongada causa estresse e pode prejudicar o sono e a audição.'}
+};
+const cls = db => {
+  if (db <= 55) return 'quiet';
+  if (db <= 70) return 'mod';
+  return 'crit';
+};
+const mix=(a,b,t)=>[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)];
+const RG=[34,197,94],RY=[250,204,21],RR=[239,68,68];
+const ramp=db=>db<=40?RG:db<=55?mix(RG,RY,(db-40)/15):db<=70?mix(RY,RR,(db-55)/15):RR;
+
+/* ---------- estado ---------- */
+const S={route:'inicio',data:[],pos:null,watch:null,running:false,mode:null,cur:null,freq:null,
+  opts:{save:true,geo:true},session:{n:0,sum:0,max:0},saved:0,buf:[],bufStart:0,hist:[],memOnly:false};
+const E={ctx:null,an:null,stream:null,nodes:[],t:null,f:null,timer:0,demoTimer:0,sm:null,scale:0.01,lu:0,ls:0,pk:new Array(64).fill(-120)};
+try{const o=JSON.parse(localStorage.getItem('soundmap.opts')||'{}');if(typeof o.save==='boolean')S.opts.save=o.save;if(typeof o.geo==='boolean')S.opts.geo=o.geo;if(Object.prototype.hasOwnProperty.call(o,'adj')){delete o.adj;localStorage.setItem('soundmap.opts',JSON.stringify(o));}}catch(e){}
+const saveOpts=()=>{try{localStorage.setItem('soundmap.opts',JSON.stringify(S.opts));}catch(e){}};
+const CAL_BASE=100; // dBFS -> dB SPL estimado: L = dBFS + 100
+
+/* ---------- banco de dados (IndexedDB, com reserva em memória) ---------- */
+const Store={db:null,ok:false,
+  open(){return new Promise(res=>{try{
+    if(!window.indexedDB)return res(false);
+    const r=indexedDB.open('soundmap',1);
+    r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('measures',{keyPath:'id'});};
+    r.onsuccess=()=>{Store.db=r.result;Store.ok=true;res(true);};
+    r.onerror=()=>res(false);r.onblocked=()=>res(false);
+  }catch(e){res(false);}});},
+  run(mode,fn){return new Promise(res=>{if(!Store.ok)return res(null);try{
+    const t=Store.db.transaction('measures',mode);const s=t.objectStore('measures');const r=fn(s);
+    t.oncomplete=()=>res(r&&r.result!==undefined?r.result:true);t.onerror=()=>res(null);t.onabort=()=>res(null);
+  }catch(e){res(null);}});},
+  all(){return Store.run('readonly',s=>s.getAll()).then(v=>Array.isArray(v)?v:[]);},
+  put(rec){return Store.run('readwrite',s=>{s.put(rec);});},
+  putMany(a){return Store.run('readwrite',s=>{a.forEach(x=>s.put(x));});},
+  del(list){return Store.run('readwrite',s=>{list.forEach(x=>s.delete(x.id));});}
+};
+
+/* ---------- dados de demonstração ---------- */
+const REGIONS=[
+  {n:'Centro Comercial',lat:-23.5505,lng:-46.6333,night:46,peak:79,prof:'rush'},
+  {n:'Terminal Rodoviário',lat:-23.5290,lng:-46.6320,night:50,peak:83,prof:'rush'},
+  {n:'Avenida Principal',lat:-23.5614,lng:-46.6559,night:52,peak:85,prof:'rush'},
+  {n:'Campus Universitário',lat:-23.5700,lng:-46.6800,night:40,peak:65,prof:'day'},
+  {n:'Bairro Residencial',lat:-23.5850,lng:-46.6200,night:34,peak:58,prof:'rush'},
+  {n:'Parque Municipal',lat:-23.5880,lng:-46.6580,night:33,peak:52,prof:'day'},
+  {n:'Distrito Industrial',lat:-23.5250,lng:-46.6020,night:48,peak:80,prof:'work'},
+  {n:'Hospital Regional',lat:-23.5400,lng:-46.6600,night:44,peak:60,prof:'day'}
+];
+const gauss=(x,m,s)=>Math.exp(-((x-m)*(x-m))/(2*s*s));
+const sig=x=>1/(1+Math.exp(-x));
+function activity(p,h){
+  if(p==='work')return clamp(0.1+0.9*sig((h-6.5)*1.6)*sig((17.5-h)*1.6),0,1);
+  if(p==='day')return clamp(0.1+0.8*gauss(h,10,2.8)+0.8*gauss(h,15,2.8),0,1);
+  return clamp(0.08+0.9*gauss(h,8,1.7)+1.0*gauss(h,18,2)+0.6*gauss(h,13,2.6),0,1);
+}
+function rng(seed){let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function genDemo(){
+  const r=rng(Math.floor(Date.now()/864e5)*7919+11);
+  const nrm=()=>Math.sqrt(-2*Math.log(r()+1e-9))*Math.cos(2*Math.PI*r());
+  const out=[];const now=Date.now();const base=new Date();base.setHours(0,0,0,0);
+  for(let d=0;d<7;d++)for(let h=0;h<24;h++)REGIONS.forEach((g,gi)=>{
+    if(r()>0.55)return;
+    const ts=base.getTime()-d*864e5+(h*60+Math.floor(r()*60))*6e4;
+    if(ts>now)return;
+    const act=activity(g.prof,h+0.5);
+    const db=clamp(g.night+(g.peak-g.night)*act+nrm()*2.6,28,105);
+    out.push({id:'d'+ts+'-'+gi,ts,db:Math.round(db*10)/10,freq:Math.round(110+r()*700),lat:g.lat+nrm()*0.0010,lng:g.lng+nrm()*0.0010,region:g.n,demo:true});
+  });
+  return out;
+}
+async function initData(){
+  S.memOnly=!(await Store.open());
+  S.data=S.memOnly?[]:await Store.all();
+  const demo=S.data.filter(d=>d.demo);
+  const newest=demo.reduce((m,d)=>Math.max(m,d.ts),0);
+  if(!demo.length||Date.now()-newest>36*36e5){
+    if(demo.length){await Store.del(demo);S.data=S.data.filter(d=>!d.demo);}
+    const g=genDemo();S.data=S.data.concat(g);await Store.putMany(g);
+  }
+}
+
+/* ---------- filtros ---------- */
+const SLOTS={all:[0,24],madrugada:[0,6],manha:[6,12],tarde:[12,18],noite:[18,24]};
+function filt(o){
+  o=o||{};const now=Date.now();
+  const lim=o.period==='24h'?864e5:o.period==='7d'?7*864e5:Infinity;
+  const sl=SLOTS[o.slot||'all'];
+  return S.data.filter(d=>{
+    if(now-d.ts>lim)return false;
+    const h=hourOf(d.ts);if(h<sl[0]||h>=sl[1])return false;
+    if(o.cls&&!o.cls.has(cls(d.db)))return false;
+    if(o.src==='demo'&&!d.demo)return false;
+    if(o.src==='real'&&d.demo)return false;
+    return true;
+  });
+}
+function regionsOf(rows){
+  const m=new Map();
+  rows.forEach(d=>{const k=d.region||'Sem localização';let r=m.get(k);
+    if(!r){r={name:k,n:0,s:0,la:0,lo:0,ln:0,max:0};m.set(k,r);}
+    r.n++;r.s+=d.db;r.max=Math.max(r.max,d.db);
+    if(d.lat!=null){r.la+=d.lat;r.lo+=d.lng;r.ln++;}});
+  return Array.from(m.values()).map(r=>({name:r.name,n:r.n,avg:r.s/r.n,max:r.max,lat:r.ln?r.la/r.ln:null,lng:r.ln?r.lo/r.ln:null}));
+}
+
+/* ---------- roteamento ---------- */
+const ROUTES=['inicio','monitor','mapa','dashboard'];
+const heroState={raf:0};
+function route(){
+  let r=(location.hash||'').replace('#','');if(ROUTES.indexOf(r)<0)r='inicio';
+  S.route=r;
+  ROUTES.forEach(n=>{$('#page-'+n).hidden=n!==r;});
+  $$('[data-route]').forEach(a=>a.classList.toggle('on',a.dataset.route===r));
+  window.scrollTo(0,0);
+  if(r==='inicio')startHero();
+  if(r==='monitor'){drawIdle();}
+  if(r==='mapa')onMapShow();
+  if(r==='dashboard')renderDash();
+}
+
+/* ---------- início ---------- */
+function renderHome(){
+  const strip=$('#home-strip');strip.textContent='';
+  const demo=S.data.filter(d=>d.demo);
+  const regs=new Set(demo.map(d=>d.region)).size;
+  const mine=S.data.length-demo.length;
+  const add=(b,t)=>{const s=document.createElement('span');const e=document.createElement('b');e.textContent=b;s.append(e,' '+t);strip.append(s);};
+  add(n0(demo.length),'medições de demonstração');
+  add(String(regs),'regiões fictícias');
+  add('7 dias','de histórico');
+  if(mine>0)add(n0(mine),mine===1?'medição sua':'medições suas');
+}
+function drawHero(t){
+  const c=$('#cv-hero');if(!c)return;const dpr=fit(c);const g=ctx2(c);if(!g)return;
+  const w=c.width,h=c.height;g.clearRect(0,0,w,h);
+  g.strokeStyle='rgba(120,160,255,.10)';g.lineWidth=1;
+  for(let i=1;i<6;i++){const y=h*i/6;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();}
+  for(let k=4;k>=0;k--){
+    g.beginPath();
+    for(let x=0;x<=w;x+=3){
+      const u=x/w,env=Math.sin(Math.PI*u);
+      const y=h*0.46+env*h*0.30*Math.sin(u*(5+k*2.4)+t*(0.9+k*0.35)+k*1.3)*(1-k*0.16);
+      if(x===0)g.moveTo(x,y);else g.lineTo(x,y);
+    }
+    g.lineWidth=(k===0?3:1.6)*dpr;
+    g.strokeStyle=k===0?COL.cyan:COL.blue;g.globalAlpha=k===0?1:0.55-k*0.07;
+    g.shadowColor=k===0?COL.cyan:'transparent';g.shadowBlur=k===0?14*dpr:0;
+    g.stroke();
+  }
+  g.globalAlpha=1;g.shadowBlur=0;
+}
+function startHero(){
+  if(reduce){drawHero(0.6);return;}
+  if(heroState.raf)return;
+  const loop=t=>{if(S.route!=='inicio'){heroState.raf=0;return;}drawHero(t/1000);heroState.raf=requestAnimationFrame(loop);};
+  heroState.raf=requestAnimationFrame(loop);
+}
+
+/* ---------- monitoramento: interface ---------- */
+function setIdleUi(){
+  $('#meter').dataset.cls='idle';
+  const b=$('#cls-badge');b.dataset.cls='idle';setT($('#cls-t'),'Aguardando');
+  setT($('#db-num'),'—');
+  setT($('#cls-msg'),'Inicie o monitoramento para ver o nível do ambiente.');
+  $('#scale-marker').style.left='0%';
+  ['k-wave','k-freq','k-amp','k-int','k-db','k-spec'].forEach(id=>setT($('#'+id),'—'));
+}
+function setRunUi(on){
+  $('#consent').hidden=on;$('#runbar').hidden=!on;
+  $('#livechip').classList.toggle('on',on);
+  $('#run-sim').hidden=S.mode!=='demo';
+  setT($('#run-title'),S.mode==='demo'?'Som simulado (sem microfone)':'Monitorando o microfone');
+  $('#opt-geo').disabled=on;
+}
+function showError(t){setT($('#mon-error-t'),t);$('#mon-error').hidden=false;}
+function updateSaved(){
+  setT($('#st-saved'),String(S.saved));
+  const sub=S.mode==='demo'?'Medições da simulação não são salvas.':(S.opts.save?'Salvando uma medição a cada 10 s · ':'Salvamento desativado · ')+geoText();
+  setT($('#run-sub'),sub);
+}
+let geoMsg='';
+const geoText=()=>'Localização: '+(geoMsg||(S.opts.geo?'aguardando':'desativada'));
+function setGeo(t){geoMsg=t;if(S.running)updateSaved();}
+function startGeo(){
+  geoMsg='';
+  if(!S.opts.geo){setGeo('desativada');return;}
+  if(!navigator.geolocation){setGeo('indisponível neste navegador');return;}
+  try{
+    S.watch=navigator.geolocation.watchPosition(
+      p=>{S.pos={lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy};setGeo('ativa, precisão ±'+n0(p.coords.accuracy)+' m');},
+      e=>{S.pos=null;setGeo(e&&e.code===1?'negada ou bloqueada, medições sem posição':'indisponível, medições sem posição');},
+      {enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+  }catch(e){setGeo('indisponível');}
+}
+
+/* ---------- monitoramento: áudio ---------- */
+function buildDemo(){
+  const ctx=E.ctx,g=ctx.createGain();g.gain.value=0.0001;
+  [[110,.35,'sine'],[220,.5,'sine'],[440,.3,'triangle'],[980,.18,'sine'],[2400,.08,'sine']].forEach(a=>{
+    const o=ctx.createOscillator();o.type=a[2];o.frequency.value=a[0];
+    const og=ctx.createGain();og.gain.value=a[1];o.connect(og);og.connect(g);o.start();E.nodes.push(o);});
+  const nb=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate);const d=nb.getChannelData(0);
+  for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const ns=ctx.createBufferSource();ns.buffer=nb;ns.loop=true;
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1800;
+  const ng=ctx.createGain();ng.gain.value=0.25;ns.connect(lp);lp.connect(ng);ng.connect(g);ns.start();E.nodes.push(ns);
+  g.connect(E.an);
+  let lvl=52;
+  const step=()=>{
+    lvl=clamp(lvl+(Math.random()-0.5)*16+(62-lvl)*0.08,36,92);
+    if(Math.random()<0.08)lvl=clamp(lvl+18,36,95);
+    const rms=Math.pow(10,(lvl-CAL_BASE)/20);
+    g.gain.setTargetAtTime(rms/0.55,ctx.currentTime,0.35);
+  };
+  step();E.demoTimer=setInterval(step,1800);
+}
+async function startMon(mode){
+  if(S.running)return;
+  $('#mon-error').hidden=true;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)throw new Error('sem-audio');
+    E.ctx=new AC();
+    E.an=E.ctx.createAnalyser();E.an.fftSize=4096;E.an.smoothingTimeConstant=0.6;E.an.minDecibels=-110;E.an.maxDecibels=-10;
+    if(mode==='mic'){
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('sem-mic');
+      E.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}});
+      const src=E.ctx.createMediaStreamSource(E.stream);src.connect(E.an);E.nodes.push(src);
+    }else buildDemo();
+    if(E.ctx.state==='suspended')await E.ctx.resume();
+  }catch(err){
+    teardown();
+    const n=err&&err.name;
+    let m='Não foi possível usar o microfone.';
+    if(n==='NotAllowedError'||n==='SecurityError')m='O acesso ao microfone foi negado ou está bloqueado neste ambiente. Permita o microfone nas configurações do navegador ou abra o SoundMap diretamente no navegador do seu aparelho.';
+    else if(n==='NotFoundError'||n==='OverconstrainedError')m='Nenhum microfone foi encontrado neste aparelho.';
+    else if(n==='NotReadableError')m='O microfone está em uso por outro aplicativo.';
+    else if(err&&err.message==='sem-mic')m='Este navegador ou ambiente não oferece acesso ao microfone.';
+    showError(m);return;
+  }
+  E.t=new Float32Array(E.an.fftSize);E.f=new Float32Array(E.an.frequencyBinCount);
+  E.sm=null;E.scale=0.01;E.pk.fill(-120);
+  S.running=true;S.mode=mode;S.cur=null;S.freq=null;S.hist=[];S.buf=[];S.bufStart=Date.now();S.saved=0;
+  S.session={n:0,sum:0,max:0};
+  if(mode==='mic')startGeo();else setGeo('não usada');
+  setRunUi(true);updateSaved();
+  E.timer=setInterval(tick,40);
+}
+function teardown(){
+  clearInterval(E.timer);clearInterval(E.demoTimer);
+  try{if(E.stream)E.stream.getTracks().forEach(t=>t.stop());}catch(e){}
+  try{if(E.ctx)E.ctx.close();}catch(e){}
+  E.stream=null;E.ctx=null;E.an=null;E.nodes=[];
+}
+function stopMon(){
+  if(!S.running)return;
+  S.running=false;
+  if(S.mode==='mic')flushBuf(true);
+  if(S.watch!=null&&navigator.geolocation){try{navigator.geolocation.clearWatch(S.watch);}catch(e){}}
+  S.watch=null;S.pos=null;
+  teardown();S.cur=null;
+  setRunUi(false);setIdleUi();drawIdle();
+  if(S.route==='dashboard')renderDash();
+}
+function dominant(){
+  const sr=E.ctx.sampleRate,hz=sr/E.an.fftSize,f=E.f;
+  const lo=Math.max(1,Math.ceil(20/hz)),hi=Math.min(f.length-2,Math.floor(20000/hz));
+  let bi=lo,bv=-Infinity;
+  for(let i=lo;i<=hi;i++){if(f[i]>bv){bv=f[i];bi=i;}}
+  if(!isFinite(bv)||bv<-95)return null;
+  const a=f[bi-1],c=f[bi+1],den=a-2*bv+c;
+  const d=den?clamp(0.5*(a-c)/den,-1,1):0;
+  return (bi+d)*hz;
+}
+function tick(){
+  if(!S.running||!E.an)return;
+  const an=E.an;an.getFloatTimeDomainData(E.t);an.getFloatFrequencyData(E.f);
+  let sum=0,pk=0;
+  for(let i=0;i<E.t.length;i++){const x=E.t[i];sum+=x*x;const a=Math.abs(x);if(a>pk)pk=a;}
+  const rms=Math.sqrt(sum/E.t.length);
+  const dbfs=20*Math.log10(Math.max(rms,1e-7));
+  const raw=clamp(dbfs+CAL_BASE,15,130);
+  E.sm=E.sm==null?raw:E.sm+(raw-E.sm)*(raw>E.sm?0.5:0.12);
+  S.cur=E.sm;
+  const now=performance.now();
+  if(S.route==='monitor'){drawWave(pk);drawSpec();}
+  if(now-E.lu>150){E.lu=now;updateMeter();}
+  if(now-E.ls>250){E.ls=now;sample();}
+}
+function sample(){
+  const db=S.cur;if(db==null)return;
+  const f=dominant();S.freq=f;
+  const s=S.session;s.n++;s.sum+=db;if(db>s.max)s.max=db;
+  S.hist.push(db);if(S.hist.length>240)S.hist.shift();
+  if(S.mode==='mic'&&S.opts.save){S.buf.push({db:db,f:f});if(Date.now()-S.bufStart>=10000)flushBuf(false);}
+  if(S.route==='monitor')drawHist();
+  updateConcepts();
+}
+function flushBuf(final){
+  const b=S.buf;
+  if(!b.length||final&&b.length<4){S.buf=[];S.bufStart=Date.now();return;}
+  const leq=10*Math.log10(b.reduce((s,x)=>s+Math.pow(10,x.db/10),0)/b.length);
+  const fs=b.map(x=>x.f).filter(Boolean).sort((p,q)=>p-q);
+  const f=fs.length?fs[Math.floor(fs.length/2)]:null;
+  const pos=S.opts.geo&&S.pos?S.pos:null;
+  const rec={id:'r'+Date.now()+Math.random().toString(36).slice(2,6),ts:Date.now(),db:Math.round(leq*10)/10,
+    freq:f?Math.round(f):null,lat:pos?pos.lat:null,lng:pos?pos.lng:null,region:pos?'Minhas medições':'Sem localização',demo:false};
+  S.data.push(rec);Store.put(rec);S.saved++;S.buf=[];S.bufStart=Date.now();updateSaved();
+}
+function updateMeter(){
+  const db=S.cur;if(db==null)return;
+  const k=cls(db),c=CLS[k];
+  setT($('#db-num'),n1(db));
+  const m=$('#meter');if(m.dataset.cls!==k)m.dataset.cls=k;
+  const b=$('#cls-badge');if(b.dataset.cls!==k){b.dataset.cls=k;}
+  setT($('#cls-t'),c.label);setT($('#cls-msg'),c.msg);
+  $('#scale-marker').style.left=clamp((db-30)/80,0,1)*100+'%';
+  const s=S.session;
+  if(s.n){setT($('#st-avg'),n1(s.sum/s.n));setT($('#st-max'),n1(s.max));}
+  setT($('#st-freq'),S.freq?n0(S.freq):'—');
+  if(S.route==='dashboard')updateNow();
+}
+function updateConcepts(){
+  const db=S.cur,f=S.freq;if(db==null||!E.an||!E.ctx)return;
+  const note=f?noteOf(f):null;
+  setT($('#k-wave'),f?'T = 1/f = '+n2(1000/f)+' ms\nλ = v/f = '+n2(VSOM/f)+' m (v = 343 m/s)':'Sem tom dominante claro agora.');
+  setT($('#k-freq'),f?n0(f)+' Hz · '+bandOf(f)+(note?' · perto de '+note:''):'Sem tom dominante claro agora.');
+  setT($('#k-amp'),'p = '+fmtP(pRms(db))+' (eficaz)\n+6 dB = dobro da amplitude');
+  setT($('#k-int'),'I = '+sci(inten(db))+' W/m²\n+10 dB = 10× a intensidade');
+  setT($('#k-db'),'L = 10·log₁₀(I/I₀) = '+n1(db)+' dB');
+  const sr=E.ctx.sampleRate,N=E.an.fftSize;
+  setT($('#k-spec'),'FFT de '+N+' amostras, resolução de '+n1(sr/N)+' Hz\n'+(f?'Pico em '+n0(f)+' Hz':'Sem pico claro'));
+}
+$$('.lv').forEach(e=>{e.style.whiteSpace='pre-line';});
+
+/* ---------- desenho: onda, espectro, histórico ---------- */
+function drawIdle(){
+  if(S.route!=='monitor')return;
+  [['cv-wave'],['cv-spec'],['cv-hist']].forEach(a=>{
+    const c=$('#'+a[0]);fit(c);const g=ctx2(c);if(!g)return;
+    g.clearRect(0,0,c.width,c.height);
+    g.strokeStyle='rgba(120,160,255,.18)';g.lineWidth=1;
+    g.beginPath();g.moveTo(0,c.height/2);g.lineTo(c.width,c.height/2);g.stroke();
+  });
+}
+function drawWave(pk){
+  const c=$('#cv-wave'),dpr=fit(c),g=ctx2(c);if(!g)return;
+  const w=c.width,h=c.height;g.clearRect(0,0,w,h);
+  g.strokeStyle='rgba(120,160,255,.12)';g.lineWidth=1;
+  for(let i=1;i<4;i++){const y=h*i/4;g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();}
+  g.strokeStyle='rgba(120,160,255,.3)';g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();
+  E.scale=Math.max(pk*1.15,E.scale*0.992,0.004);
+  const buf=E.t,N=1536;let st=0;
+  for(let i=1;i<2048;i++){if(buf[i-1]<0&&buf[i]>=0){st=i;break;}}
+  g.beginPath();
+  for(let x=0;x<w;x+=2){
+    const v=buf[st+Math.floor(x/w*N)]||0;
+    const y=h/2-(v/E.scale)*h*0.44;
+    if(x===0)g.moveTo(x,y);else g.lineTo(x,y);
+  }
+  g.lineWidth=2*dpr;g.strokeStyle=COL.cyan;g.shadowColor=COL.cyan;g.shadowBlur=8*dpr;g.lineJoin='round';g.stroke();g.shadowBlur=0;
+  g.fillStyle=COL.muted;g.font=(10*dpr)+'px '+COL.mono;g.textBaseline='top';
+  g.fillText('+p',6*dpr,4*dpr);g.textBaseline='bottom';g.fillText('−p',6*dpr,h-4*dpr);
+}
+function drawSpec(){
+  const c=$('#cv-spec'),dpr=fit(c),g=ctx2(c);if(!g||!E.ctx)return;
+  const w=c.width,h=c.height;g.clearRect(0,0,w,h);
+  const pl=36*dpr,pb=20*dpr,pt=8*dpr,pw=w-pl-4*dpr,ph=h-pb-pt;
+  const sr=E.ctx.sampleRate,hz=sr/E.an.fftSize,fmin=20,fmax=Math.min(20000,sr/2*0.98);
+  const lg=Math.log(fmax/fmin);
+  const xOf=f=>pl+pw*Math.log(f/fmin)/lg;
+  const dbMin=-100,dbMax=-20,yOf=v=>pt+ph*(1-clamp((v-dbMin)/(dbMax-dbMin),0,1));
+  g.font=(10*dpr)+'px '+COL.mono;g.fillStyle=COL.muted;
+  // faixa da voz humana
+  g.fillStyle='rgba(34,211,238,.06)';g.fillRect(xOf(300),pt,xOf(3400)-xOf(300),ph);
+  g.fillStyle=COL.muted;g.textBaseline='top';g.textAlign='center';g.fillText('voz',(xOf(300)+xOf(3400))/2,pt+3*dpr);
+  // linhas de dB
+  g.textAlign='right';g.textBaseline='middle';
+  [-90,-60,-30].forEach(v=>{const y=yOf(v);g.strokeStyle='rgba(120,160,255,.12)';g.lineWidth=1;g.beginPath();g.moveTo(pl,y);g.lineTo(w,y);g.stroke();g.fillStyle=COL.muted;g.fillText(String(v),pl-5*dpr,y);});
+  // barras
+  const B=64;let best=-Infinity,bx=0,by=0;
+  const grad=g.createLinearGradient(0,pt,0,pt+ph);grad.addColorStop(0,COL.cyan);grad.addColorStop(1,COL.blue);
+  for(let b=0;b<B;b++){
+    const f0=fmin*Math.pow(fmax/fmin,b/B),f1=fmin*Math.pow(fmax/fmin,(b+1)/B);
+    const i0=Math.min(E.f.length-1,Math.floor(f0/hz)),i1=Math.max(i0,Math.min(E.f.length-1,Math.floor(f1/hz)));
+    let m=-Infinity;for(let i=i0;i<=i1;i++)if(E.f[i]>m)m=E.f[i];
+    if(!isFinite(m))m=-120;
+    E.pk[b]=Math.max(m,E.pk[b]-0.5);
+    const x0=xOf(f0)+1,x1=xOf(f1)-1,y=yOf(m);
+    g.fillStyle=grad;g.globalAlpha=0.9;g.fillRect(x0,y,Math.max(1,x1-x0),pt+ph-y);g.globalAlpha=1;
+    g.fillStyle='rgba(233,241,255,.7)';g.fillRect(x0,yOf(E.pk[b]),Math.max(1,x1-x0),Math.max(1,1.5*dpr));
+    if(m>best){best=m;bx=(x0+x1)/2;by=y;}
+  }
+  if(S.freq&&best>-95){g.fillStyle=COL.fg;g.textAlign='center';g.textBaseline='bottom';g.fillText(n0(S.freq)+' Hz',clamp(bx,pl+24*dpr,w-24*dpr),Math.max(pt+12*dpr,by-3*dpr));}
+  // eixo de frequência
+  g.textBaseline='top';g.textAlign='center';g.fillStyle=COL.muted;
+  [50,100,200,500,1000,2000,5000,10000,20000].forEach(f=>{if(f>fmax)return;const x=xOf(f);
+    g.strokeStyle='rgba(120,160,255,.25)';g.beginPath();g.moveTo(x,pt+ph);g.lineTo(x,pt+ph+3*dpr);g.stroke();
+    g.fillText(f>=1000?(f/1000)+'k':String(f),x,pt+ph+5*dpr);});
+  g.textAlign='left';g.textBaseline='top';g.fillText('dBFS',2*dpr,pt);
+}
+function drawHist(){
+  const c=$('#cv-hist'),dpr=fit(c),g=ctx2(c);if(!g)return;
+  const w=c.width,h=c.height;g.clearRect(0,0,w,h);
+  const lo=20,hi=110,yOf=v=>h*(1-(clamp(v,lo,hi)-lo)/(hi-lo));
+  g.fillStyle='rgba(34,197,94,.10)';g.fillRect(0,yOf(T.quiet),w,h-yOf(T.quiet));
+  g.fillStyle='rgba(250,204,21,.09)';g.fillRect(0,yOf(T.crit),w,yOf(T.quiet)-yOf(T.crit));
+  g.fillStyle='rgba(239,68,68,.10)';g.fillRect(0,0,w,yOf(T.crit));
+  g.font=(10*dpr)+'px '+COL.mono;g.fillStyle=COL.muted;g.textAlign='left';g.textBaseline='bottom';
+  [[T.quiet,'55 dB'],[T.crit,'70 dB']].forEach(a=>{const y=yOf(a[0]);g.strokeStyle='rgba(233,241,255,.25)';g.setLineDash([5*dpr,4*dpr]);g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();g.setLineDash([]);g.fillText(a[1],4*dpr,y-2*dpr);});
+  const H=S.hist;if(!H.length)return;
+  g.beginPath();
+  H.forEach((v,i)=>{const x=w*(i+240-H.length)/239,y=yOf(v);if(i===0)g.moveTo(x,y);else g.lineTo(x,y);});
+  g.lineWidth=2*dpr;g.strokeStyle=COL.cyan;g.lineJoin='round';g.stroke();
+  const lx=w*(239)/239,ly=yOf(H[H.length-1]);
+  g.fillStyle=COL[cls(H[H.length-1])];g.beginPath();g.arc(lx-3*dpr,ly,4*dpr,0,Math.PI*2);g.fill();
+}
+
+/* ---------- mapa ---------- */
+const M={map:null,heat:null,markers:null,layer:'both',cls:new Set(['quiet','mod','crit']),slot:'all',period:'all',tileErr:0,fitted:false,regions:[]};
+function aggCells(pts){
+  const q=0.0012,m=new Map();
+  pts.forEach(p=>{const k=Math.round(p.lat/q)+':'+Math.round(p.lng/q);let c=m.get(k);
+    if(!c){c={s:0,n:0,la:0,lo:0};m.set(k,c);}c.s+=p.db;c.n++;c.la+=p.lat;c.lo+=p.lng;});
+  return Array.from(m.values()).map(c=>({lat:c.la/c.n,lng:c.lo/c.n,v:c.s/c.n,w:Math.min(1,0.5+c.n/8)}));
+}
+function makeHeatClass(){
+  return L.Layer.extend({
+    initialize(){this._pts=[];},
+    setPoints(p){this._pts=p;if(this._map)this._redraw();},
+    onAdd(map){
+      this._map=map;
+      const c=this._canvas=L.DomUtil.create('canvas','sm-heat leaflet-zoom-hide');
+      map.getPanes().overlayPane.appendChild(c);
+      map.on('moveend zoomend resize',this._redraw,this);
+      this._redraw();
+    },
+    onRemove(map){L.DomUtil.remove(this._canvas);map.off('moveend zoomend resize',this._redraw,this);this._map=null;},
+    _redraw(){
+      const map=this._map;if(!map)return;
+      const size=map.getSize(),cell=8,w=Math.ceil(size.x/cell),h=Math.ceil(size.y/cell);
+      const c=this._canvas;c.width=w;c.height=h;c.style.width=size.x+'px';c.style.height=size.y+'px';
+      L.DomUtil.setPosition(c,map.containerPointToLayerPoint([0,0]));
+      const g=ctx2(c);if(!g||!this._pts.length)return;
+      const img=g.createImageData(w,h),d=img.data;
+      const mpp=156543.03392*Math.cos(map.getCenter().lat*Math.PI/180)/Math.pow(2,map.getZoom());
+      const sg=clamp(380/mpp,10,220),s2=2*sg*sg,cut=9*sg*sg;
+      const P=this._pts.map(p=>{const q=map.latLngToContainerPoint([p.lat,p.lng]);return{x:q.x/cell,y:q.y/cell,v:p.v,w:p.w};});
+      const k=1/(cell*cell);
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        let sw=0,sv=0;
+        for(let i=0;i<P.length;i++){
+          const dx=(x+0.5-P[i].x)*cell,dy=(y+0.5-P[i].y)*cell,d2=dx*dx+dy*dy;
+          if(d2>cut)continue;
+          const wg=Math.exp(-d2/s2)*P[i].w;sw+=wg;sv+=wg*P[i].v;
+        }
+        if(sw<0.02)continue;
+        const col=ramp(sv/sw),a=(1-Math.exp(-sw*1.5))*0.72,o=(y*w+x)*4;
+        d[o]=col[0];d[o+1]=col[1];d[o+2]=col[2];d[o+3]=Math.round(a*255);
+      }
+      g.putImageData(img,0,0);
+    }
+  });
+}
+function initMap(){
+  M.map=L.map('map',{preferCanvas:true,zoomControl:true}).setView([-23.55,-46.64],12);
+  const tl=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd',attribution:'© OpenStreetMap · © CARTO'}).addTo(M.map);
+  tl.on('tileerror',()=>{M.tileErr++;if(M.tileErr>=3)$('#tile-note').hidden=false;});
+  tl.on('tileload',()=>{if(!$('#tile-note').hidden){M.tileErr=0;$('#tile-note').hidden=true;}});
+  const Heat=makeHeatClass();M.heat=new Heat();
+  M.markers=L.layerGroup().addTo(M.map);
+}
+function popup(d){
+  const el=document.createElement('div');el.className='pop';
+  const s=document.createElement('strong');s.textContent=n1(d.db)+' dB · '+CLS[cls(d.db)].label;
+  const p=document.createElement('div');p.textContent=(d.region||'Sem localização')+' · '+fmtDate(d.ts)+(d.demo?' · demonstração':'');
+  el.append(s,p);return el;
+}
+function mapFilters(){return{cls:M.cls,slot:M.slot,period:M.period};}
+function renderMap(fitView){
+  const rows=filt(mapFilters());
+  const pts=rows.filter(d=>d.lat!=null);
+  setT($('#map-count'),n0(pts.length)+' pontos no mapa');
+  renderRank(rows);
+  if(!M.map)return;
+  M.markers.clearLayers();
+  const showM=M.layer==='markers'||M.layer==='both',showH=M.layer==='heat'||M.layer==='both';
+  if(showH){M.heat.setPoints(aggCells(pts));if(!M.map.hasLayer(M.heat))M.heat.addTo(M.map);}
+  else if(M.map.hasLayer(M.heat))M.map.removeLayer(M.heat);
+  if(showM){
+    pts.forEach(d=>{
+      L.circleMarker([d.lat,d.lng],{radius:d.demo?5:8,color:d.demo?'rgba(255,255,255,.35)':'#fff',weight:d.demo?0.6:2,fillColor:COL[cls(d.db)],fillOpacity:0.85}).bindPopup(()=>popup(d)).addTo(M.markers);
+    });
+    regionsOf(pts).forEach(r=>{
+      if(r.lat==null||r.name==='Sem localização')return;
+      const k=cls(r.avg);
+      const ic=L.divIcon({className:'rgn',html:'<span style="--c:'+COL[k]+'">'+n0(r.avg)+'</span>',iconSize:[40,40],iconAnchor:[20,20]});
+      const mk=L.marker([r.lat,r.lng],{icon:ic,keyboard:false});
+      mk.bindPopup(()=>{const el=document.createElement('div');el.className='pop';const s=document.createElement('strong');s.textContent=r.name;const p=document.createElement('div');p.textContent='Média '+n1(r.avg)+' dB · máx. '+n1(r.max)+' dB · '+n0(r.n)+' medições';el.append(s,p);return el;});
+      mk.addTo(M.markers);
+    });
+  }
+  if(fitView&&pts.length){
+    const b=L.latLngBounds(pts.map(d=>[d.lat,d.lng]));
+    M.map.fitBounds(b.pad(0.15),{maxZoom:15});M.fitted=true;
+  }
+}
+function renderRank(rows){
+  const regs=regionsOf(rows).filter(r=>r.name!=='Sem localização');
+  M.regions=regs;
+  const fill=(ul,list)=>{
+    ul.textContent='';
+    if(!list.length){const li=document.createElement('li');li.className='capt';li.textContent='Sem dados para os filtros atuais.';ul.append(li);return;}
+    list.forEach(r=>{
+      const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.dataset.cls=cls(r.avg);
+      const a=document.createElement('span');a.textContent=r.name;
+      const v=document.createElement('span');v.className='v';v.textContent=n1(r.avg)+' dB';
+      const s=document.createElement('small');s.textContent=n0(r.n)+' medições · máx. '+n1(r.max)+' dB';
+      b.append(a,v,s);
+      b.addEventListener('click',()=>{if(M.map&&r.lat!=null)M.map.flyTo([r.lat,r.lng],15,{duration:reduce?0:0.8});});
+      li.append(b);ul.append(li);});
+  };
+  const byAvg=regs.slice().sort((a,b)=>b.avg-a.avg);
+  fill($('#rk-loud'),byAvg.slice(0,3));
+  fill($('#rk-quiet'),byAvg.slice(-3).reverse());
+}
+function onMapShow(){
+  if(!window.L){$('#map-fallback').hidden=false;renderMap(false);return;}
+  if(!M.map)initMap();
+  setTimeout(()=>{M.map.invalidateSize();renderMap(!M.fitted);},40);
+}
+function bindChips(group,attr,cb){
+  $$('#'+group+' .chip').forEach(b=>b.addEventListener('click',()=>cb(b.dataset[attr],b)));
+}
+bindChips('f-layer','layer',(v)=>{M.layer=v;$$('#f-layer .chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.layer===v)));renderMap(false);});
+bindChips('f-cls','cls',(v,b)=>{if(M.cls.has(v))M.cls.delete(v);else M.cls.add(v);b.setAttribute('aria-pressed',String(M.cls.has(v)));renderMap(false);});
+bindChips('f-slot','slot',(v)=>{M.slot=v;$$('#f-slot .chip').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.slot===v)));renderMap(false);});
+$('#f-period').addEventListener('change',e=>{M.period=e.target.value;renderMap(false);});
+$('#btn-fit').addEventListener('click',()=>renderMap(true));
+$('#btn-me').addEventListener('click',()=>{
+  const note=$('#me-note');note.hidden=false;
+  if(!navigator.geolocation){note.textContent='Localização indisponível neste navegador.';return;}
+  note.textContent='Buscando sua posição…';
+  navigator.geolocation.getCurrentPosition(p=>{
+    note.textContent='Posição encontrada, precisão ±'+n0(p.coords.accuracy)+' m.';
+    if(M.map){M.map.flyTo([p.coords.latitude,p.coords.longitude],15,{duration:reduce?0:0.8});
+      L.circleMarker([p.coords.latitude,p.coords.longitude],{radius:9,color:'#fff',weight:2,fillColor:COL.blue,fillOpacity:1}).addTo(M.markers).bindPopup('Você está aqui');}
+  },e=>{note.textContent=e&&e.code===1?'Permissão de localização negada ou bloqueada neste ambiente.':'Não foi possível obter a posição.';},{enableHighAccuracy:true,timeout:15000});
+});
+$('#btn-me').disabled=false;
+
+/* ---------- dashboard ---------- */
+const D={period:'7d',src:'all',limit:30};
+const CH={};
+function chartsReady(){
+  if(!window.Chart)return false;
+  Chart.defaults.color=COL.muted;Chart.defaults.font.family=css('--f-body')||'sans-serif';
+  Chart.defaults.borderColor='rgba(120,160,255,.12)';Chart.defaults.animation=reduce?false:{duration:450};
+  return true;
+}
+function mk(id,cfg){
+  if(CH[id]){CH[id].data=cfg.data;CH[id].options=cfg.options;CH[id].update('none');return;}
+  CH[id]=new Chart(document.getElementById(id),cfg);
+}
+const dashRows=()=>filt({period:D.period,src:D.src});
+function hourly(rows){
+  const s=new Array(24).fill(0),n=new Array(24).fill(0);
+  rows.forEach(d=>{const h=hourOf(d.ts);s[h]+=d.db;n[h]++;});
+  return s.map((v,i)=>n[i]?v/n[i]:null);
+}
+function updateNow(){
+  const t=$('#t-now');
+  if(S.running&&S.cur!=null){
+    setT($('#t-now-l'),'Nível atual · ao vivo');setT($('#t-now-v'),n1(S.cur));t.dataset.cls=cls(S.cur);
+    setT($('#t-now-s'),CLS[cls(S.cur)].label+(S.mode==='demo'?' · simulação':''));return;
+  }
+  const rows=dashRows().slice().sort((a,b)=>b.ts-a.ts);
+  if(!rows.length){setT($('#t-now-l'),'Nível atual');setT($('#t-now-v'),'—');t.dataset.cls='idle';setT($('#t-now-s'),'sem medições');return;}
+  const d=rows[0];
+  setT($('#t-now-l'),'Última medição');setT($('#t-now-v'),n1(d.db));t.dataset.cls=cls(d.db);
+  setT($('#t-now-s'),(d.region||'Sem localização')+' · '+fmtDate(d.ts));
+}
+function renderDash(){
+  const rows=dashRows();
+  const avg=rows.length?rows.reduce((s,d)=>s+d.db,0)/rows.length:null;
+  const leq=rows.length?10*Math.log10(rows.reduce((s,d)=>s+Math.pow(10,d.db/10),0)/rows.length):null;
+  const mx=rows.reduce((m,d)=>!m||d.db>m.db?d:m,null);
+  updateNow();
+  setT($('#t-avg'),avg==null?'—':n1(avg));setT($('#t-avg-s'),leq==null?'sem dados':'Nível equivalente (Leq): '+n1(leq)+' dB');
+  setT($('#t-max'),mx?n1(mx.db):'—');setT($('#t-max-s'),mx?(mx.region||'Sem localização')+' · '+fmtDate(mx.ts):'sem dados');
+  $('#t-max-c').dataset.cls=mx?cls(mx.db):'idle';
+  setT($('#t-n'),n0(rows.length));
+  setT($('#t-n-s'),n0(rows.filter(d=>d.lat!=null).length)+' com localização');
+
+  const hv=hourly(rows);
+  // horários mais barulhentos + previsão
+  const ranked=hv.map((v,h)=>({h:h,v:v})).filter(x=>x.v!=null).sort((a,b)=>b.v-a.v);
+  const ul=$('#hrs');ul.textContent='';
+  ranked.slice(0,5).forEach(x=>{
+    const li=document.createElement('li');li.dataset.cls=cls(x.v);
+    const a=document.createElement('span');a.textContent=String(x.h).padStart(2,'0')+'h–'+String((x.h+1)%24).padStart(2,'0')+'h';
+    const b=document.createElement('span');b.className='bar';const i=document.createElement('i');i.style.width=clamp((x.v-30)/70,0.03,1)*100+'%';b.append(i);
+    const v=document.createElement('span');v.className='v';v.textContent=n1(x.v)+' dB';
+    li.append(a,b,v);ul.append(li);});
+  if(!ranked.length){const li=document.createElement('li');li.textContent='Sem dados para o período.';ul.append(li);}
+  setT($('#fc-peak'),ranked.length?String(ranked[0].h).padStart(2,'0')+'h · ≈ '+n0(ranked[0].v)+' dB':'—');
+  const nowH=new Date().getHours();
+  setT($('#fc-now'),hv[nowH]!=null?'≈ '+n0(hv[nowH])+' dB (às '+String(nowH).padStart(2,'0')+'h)':'—');
+
+  renderTable(rows);
+  setT($('#store-note'),S.memOnly?'O armazenamento local não está disponível neste navegador. Os dados valem apenas nesta sessão.':'Dados guardados neste navegador. Nenhum áudio é armazenado.');
+
+  if(!chartsReady())return;
+  const hours=Array.from({length:24},(_,i)=>i);
+  const grid={color:'rgba(120,160,255,.10)'};
+  mk('ch-hour',{type:'bar',data:{labels:hours.map(h=>h+'h'),datasets:[
+    {label:'Média (dB)',data:hv,backgroundColor:hv.map(v=>v==null?'transparent':COL[cls(v)]+'cc'),borderRadius:4,order:2},
+    {type:'line',label:'Moderado (55 dB)',data:hours.map(()=>T.quiet),borderColor:COL.mod,borderDash:[6,5],borderWidth:1.5,pointRadius:0,order:1},
+    {type:'line',label:'Crítico (70 dB)',data:hours.map(()=>T.crit),borderColor:COL.crit,borderDash:[6,5],borderWidth:1.5,pointRadius:0,order:1}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:30,suggestedMax:95,grid:grid,title:{display:true,text:'dB'}},x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:12}}},plugins:{legend:{position:'bottom',labels:{boxWidth:10,usePointStyle:true}}}}});
+
+  const regs=regionsOf(rows).sort((a,b)=>b.avg-a.avg);
+  mk('ch-region',{type:'bar',data:{labels:regs.map(r=>r.name),datasets:[{label:'Média (dB)',data:regs.map(r=>Math.round(r.avg*10)/10),backgroundColor:regs.map(r=>COL[cls(r.avg)]+'cc'),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{min:30,suggestedMax:95,grid:grid,title:{display:true,text:'dB'}},y:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+  const days=new Map();
+  rows.forEach(d=>{const dt=new Date(d.ts);const k=dt.getFullYear()*10000+(dt.getMonth()+1)*100+dt.getDate();let o=days.get(k);if(!o){o={s:0,n:0,t:new Date(dt.getFullYear(),dt.getMonth(),dt.getDate())};days.set(k,o);}o.s+=d.db;o.n++;});
+  const dk=Array.from(days.keys()).sort((a,b)=>a-b);
+  mk('ch-day',{type:'line',data:{labels:dk.map(k=>days.get(k).t.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})),datasets:[{label:'Média (dB)',data:dk.map(k=>Math.round(days.get(k).s/days.get(k).n*10)/10),borderColor:COL.cyan,backgroundColor:'rgba(34,211,238,.14)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:COL.cyan}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:30,suggestedMax:90,grid:grid,title:{display:true,text:'dB'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+  const cn={quiet:0,mod:0,crit:0};rows.forEach(d=>cn[cls(d.db)]++);
+  mk('ch-cls',{type:'doughnut',data:{labels:['Tran','Moderado','Crítico'],datasets:[{data:[cn.quiet,cn.mod,cn.crit],backgroundColor:[COL.quiet,COL.mod,COL.crit],borderColor:'#081330',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{position:'bottom',labels:{boxWidth:10,usePointStyle:true}},tooltip:{callbacks:{label:c=>{const t=rows.length||1;return ' '+c.label+': '+n0(c.parsed)+' ('+n0(c.parsed/t*100)+'%)';}}}}}});
+}
+function renderTable(rows){
+  const tb=$('#tb');tb.textContent='';
+  const list=rows.slice().sort((a,b)=>b.ts-a.ts);
+  list.slice(0,D.limit).forEach(d=>{
+    const tr=document.createElement('tr');
+    const c=(t,k)=>{const td=document.createElement('td');if(k)td.className=k;td.textContent=t;return td;};
+    tr.append(c(fmtDate(d.ts)),c(d.region||'Sem localização'),c(n1(d.db)+' dB','num'));
+    const tc=document.createElement('td');const bd=document.createElement('span');bd.className='badge';bd.dataset.cls=cls(d.db);bd.textContent=CLS[cls(d.db)].label;tc.append(bd);tr.append(tc);
+    tr.append(c(d.freq?n0(d.freq)+' Hz':'—','num'),c(d.demo?'Demonstração':'Real'));
+    tb.append(tr);
+  });
+  if(!list.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='Nenhuma medição no período. Inicie o monitoramento para criar as suas.';tr.append(td);tb.append(tr);}
+  $('#btn-more').hidden=list.length<=D.limit;
+}
+$('#d-period').addEventListener('change',e=>{D.period=e.target.value;D.limit=30;renderDash();});
+$('#d-src').addEventListener('change',e=>{D.src=e.target.value;D.limit=30;renderDash();});
+$('#btn-more').addEventListener('click',()=>{D.limit+=30;renderTable(dashRows());});
+$('#btn-regen').addEventListener('click',async()=>{
+  const old=S.data.filter(d=>d.demo);await Store.del(old);S.data=S.data.filter(d=>!d.demo);
+  const g=genDemo();S.data=S.data.concat(g);await Store.putMany(g);M.fitted=false;renderHome();renderDash();
+});
+let clearArm=0;
+$('#btn-clear').addEventListener('click',async e=>{
+  const b=e.currentTarget;
+  if(!clearArm){clearArm=setTimeout(()=>{clearArm=0;b.textContent='Apagar minhas medições';},4000);b.textContent='Confirmar: apagar tudo';return;}
+  clearTimeout(clearArm);clearArm=0;b.textContent='Apagar minhas medições';
+  const mine=S.data.filter(d=>!d.demo);await Store.del(mine);S.data=S.data.filter(d=>d.demo);renderHome();renderDash();
+});
+
+/* ---------- eventos gerais ---------- */
+$('#opt-save').checked=S.opts.save;$('#opt-geo').checked=S.opts.geo;
+$('#opt-save').addEventListener('change',e=>{S.opts.save=e.target.checked;saveOpts();if(S.running)updateSaved();});
+$('#opt-geo').addEventListener('change',e=>{S.opts.geo=e.target.checked;saveOpts();});
+$('#btn-start').addEventListener('click',()=>startMon('mic'));
+$('#btn-demo').addEventListener('click',()=>startMon('demo'));
+$('#btn-demo2').addEventListener('click',()=>startMon('demo'));
+$('#btn-stop').addEventListener('click',stopMon);
+$('#chip-stop').addEventListener('click',stopMon);
+window.addEventListener('pagehide',()=>{if(S.running)stopMon();});
+window.addEventListener('hashchange',route);
+window.addEventListener('resize',()=>{if(S.route==='inicio'&&reduce)drawHero(0.6);if(S.route==='mapa'&&M.map)M.map.invalidateSize();if(S.route==='monitor'&&!S.running)drawIdle();});
+
+/* ---------- início do app ---------- */
+setIdleUi();
+initData().then(()=>{renderHome();route();});
+
+})();
+</script>
